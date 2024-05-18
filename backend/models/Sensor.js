@@ -15,5 +15,5 @@ const sensorDataSchema = new Schema({
 });
 
 // Nastavitev modela in izvoz
-const SensorData = mongoose.model('SensorData', sensorDataSchema);
-module.exports = SensorData;
+const Sensor = mongoose.model('Sensor', sensorDataSchema);
+module.exports = Sensor;

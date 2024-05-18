@@ -1,0 +1,101 @@
+Pregled Shem
+
+1. User Schema
+	-Vključuje osnovne podatke za identifikacijo in avtentikacijo, biometrične podatke, MQTT identifikator, platformo in naprave. To bo omogočilo, da bo aplikacija podpirala različne platforme in večnapravno uporabo.
+	-Dodatek biometričnih podatkov in personaliziranih nastavitev uporabnika povečuje varnost in personalizacijo.
+	
+2. Device Schema
+	-Omogoča sledenje in upravljanje naprav, kar je koristno za funkcionalnosti, povezane z varnostjo in sledenjem aktivnosti.
+
+3. Authentication Schema
+	-Podpira 2FA, kar izboljša varnost pri prijavi v aplikacijo. Vključitev metode in statusa avtentikacije omogoča prilagodljivo upravljanje varnostnih protokolov.
+
+4. Message Schema
+	-Podpora za sporočila preko MQTT protokola omogoča komunikacijo med uporabniki. Shema vsebuje vse potrebne informacije za učinkovito in varno izmenjavo sporočil.
+
+5. Activity Schema
+	-Shema zajema širok spekter podatkov o fizični aktivnosti, vključno z lokacijskimi podatki in podatki o vremenu, kar omogoča analizo in prilagajanje aktivnosti glede na okoljske dejavnike.
+
+6. Sensor Data Schema
+	-Fleksibilna shema za shranjevanje različnih vrst senzorskih podatkov, ki podpira raznolike vire podatkov kot so Face ID, pedometer, GPS, barometer in vremenski podatki. Fleksibilnost v tipu podatkov (value) omogoča lahko prilagoditev in razširitev.
+
+
+PREGLED KONTROLERJEV
+
+1. User kontroler - metode
+	getAllUsers-Funkcija za pridobivanje vseh uporabnikov
+	getUserById-Funkcija za pridobivanje uporabnika po ID
+	createUser-Funkcija za dodajanje novega uporabnika
+	updateUser-Funkcija za posodabljanje obstoječega uporabnika
+	deleteUser-Funkcija za brisanje uporabnika
+
+	Primer uporabe:
+    Ko se uporabnik registrira, se pokliče createUser, ki shrani njegove podatke, vključno s Face ID za prijavo.
+
+2. Activity kontroler - metode
+	getAllActivities-Pridobi vse aktivnosti
+	getActivityById-Pridobi aktivnost po ID
+	createActivity-Dodaj novo aktivnost
+	updateActivity-Posodobi obstoječo aktivnost
+	deleteActivity-Izbriši aktivnost
+
+	Primer uporabe:
+    Ko uporabnik konča tek, se podatki o aktivnosti (čas, razdalja, koraki) pošljejo na strežnik z createActivity.
+
+3. Authentication kontroler - metode
+	createAuthentication-Ustvari novo avtentikacijo
+	getAuthenticationById-Pridobi avtentikacijo po ID
+	updateAuthentication-Posodobi obstoječo avtentikacijo (npr. nastavitev statusa na "verified")
+
+	Primer uporabe:
+    Ko se uporabnik prijavi, se ustvari nova 2FA zahteva s createAuthentication. Uporabnik vnese kodo, ki jo preverimo in nato posodobimo status z updateAuthentication.
+
+4. Device kontroler - metode
+	getAllDevices-Pridobi vse naprave
+	getDeviceById-Pridobi napravo po ID
+	createDevice-Dodaj novo napravo
+	updateDevice-Posodobi obstoječo napravo
+	deleteDevice-Izbriši napravo
+
+	Primer uporabe:
+    Ko uporabnik prvič uporabi aplikacijo na novi napravi, se naprava registrira z createDevice.
+
+5. Message kontroler - metode
+	getAllMessages-Pridobi vsa sporočila
+	getMessageById-Pridobi sporočilo po ID
+	createMessage-Dodaj novo sporočilo
+	updateMessage-Posodobi obstoječe sporočilo
+	deleteMessage-Izbriši sporočilo
+
+	Primer uporabe:
+    Ko sistem pošlje uporabniku obvestilo o vremenskih razmerah za vadbo, se to shrani kot sporočilo z createMessage.
+
+6. Sensor kontroler - metode
+	getAllSensorData-Pridobi vse podatke iz senzorjev
+	getSensorDataById-Pridobi podatke iz senzorjev po ID
+	createSensorData-Dodaj nove podatke iz senzorja
+	updateSensorData-Posodobi obstoječe podatke iz senzorjev
+	deleteSensorData-Izbriši podatke iz senzorjev
+
+	Primer uporabe:
+    Med tekom uporabnikova naprava zbira podatke o korakih in lokaciji ter jih pošlje na strežnik z createSensorData.
+
+
+Realni primer uporabe:
+
+Registracija novega uporabnika:
+
+    Uporabnik se registrira, API pokliče createUser.
+    Registriramo uporabnikovo napravo z createDevice.
+    Uporabnik se prijavi, sproži createAuthentication za 2FA.
+
+Beleženje in obdelava vadbe:
+
+    Uporabnik začne teči, naprava beleži korake in GPS podatke, API pokliče createSensorData.
+    Po koncu teka API pokliče createActivity za beleženje celotne aktivnosti.
+    Na podlagi zbranih podatkov API analizira vadbo in pošlje personalizirano sporočilo z createMessage.
+
+Uporaba vremenskih podatkov:
+
+    Sistem redno pridobiva vremenske podatke in jih analizira glede na uporabnikove aktivnosti.
+    Če se napoveduje lepo vreme, API pošlje sporočilo z createMessage, ki predlaga aktivnosti na prostem.
