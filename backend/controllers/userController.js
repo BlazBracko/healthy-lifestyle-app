@@ -23,18 +23,18 @@ exports.getUserById = async (req, res) => {
 
 // Funkcija za dodajanje novega uporabnika
 exports.createUser = async (req, res) => {
-    const { name, surname, username, email, password, faceIDData, mqttClientID, platform, deviceTokens, settings, age, height, weight, gender } = req.body;
-
-    const user = new User({
-        name, surname, username, email, faceIDData, mqttClientID, platform, deviceTokens, settings, age, height, weight, gender
-    });
-
+    const { name, surname, username, email, password } = req.body;
     try {
+        //const existingUser = await User.findOne({ email });
+        //if (existingUser) {
+        //    return res.status(409).json({ message: "User already exists!" });
+        //}
+        const user = new User({ name, surname, username, email, password });
         await user.encryptPassword(password);
         const newUser = await user.save();
         res.status(201).json(newUser);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 };
 
