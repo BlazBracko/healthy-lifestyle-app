@@ -15,15 +15,8 @@ const activitySchema = new Schema({
   caloriesBurned: Number,  // Porabljene kalorije
   stepCount: Number,  // Število korakov
   altitudeChanges: [{ time: Date, altitude: Number }],  // Spremembe nadmorske višine
-  weatherConditions: {  // Vremenski pogoji med aktivnostjo
-    temperature: Number, // Temperatura v °C
-    humidity: Number, // Vlažnost v %
-    windSpeed: Number, // Hitrost vetra v km/h
-    weatherDescription: String, // Opis vremenskih razmer, npr. "sončno", "oblačno", "deževno"
-    precipitation: Number // Količina padavin v mm, če sploh so
-    //opcijsko dodamo še kvaliteto zraka
-  }
-});
+  weatherConditions: { type: Schema.Types.ObjectId, ref: 'Weather' }
+  });
 
 // Nastavitev modela in izvoz
 const Activity = mongoose.model('Activity', activitySchema);

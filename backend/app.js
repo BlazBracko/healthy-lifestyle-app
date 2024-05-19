@@ -12,6 +12,7 @@ const authenticationRoutes = require('./routes/authenticationRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const sensorRoutes = require('./routes/sensorRoutes');
+const weatherRoutes = require('./routes/weatherRoutes');
 
 //Middleware
 app.use(cors());
@@ -21,7 +22,6 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
-
 
 mongoose.connect('mongodb://localhost:27017/mydatabase', {
   useNewUrlParser: true,
@@ -39,6 +39,7 @@ app.use('/authentication', authenticationRoutes);
 app.use('/devices', deviceRoutes);
 app.use('/messages', messageRoutes);
 app.use('/sensors', sensorRoutes);
+app.use('/weathers', weatherRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
