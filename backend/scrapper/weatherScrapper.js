@@ -67,7 +67,7 @@ const formatData = (data) => {
 };
 
 // Zažene funkcijo direktno med izvajanjem skripte
-scrapeWeather();
+//scrapeWeather();
 
 module.exports = {
   scrapeWeather,

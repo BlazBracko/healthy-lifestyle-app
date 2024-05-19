@@ -7,13 +7,13 @@ const Schema = mongoose.Schema;
 
 // Definicija sheme uporabnika
 const userSchema = new Schema({
-    name: { type: String, unique: true, required: true },
-    surname: { type: String, unique: true, required: true },
+    name: { type: String, required: true },
+    surname: { type: String, required: true },
     username: { type: String, unique: true, required: true },
     email: { type: String, unique: true, required: true },
     hashedPassword: { type: String, required: true },
     faceIDData: Buffer, // Biometrični podatki obraza
-    mqttClientID: { type: String, unique: true }, // Unikatni ID za MQTT klienta
+    mqttClientID: { type: String, /*unique: true,sparse: true */}, // Make the field sparse to ignore null values
     platform: String, // Platforma uporabnika, npr. 'iOS', 'Android', 'Web'
     deviceTokens: [String], // Tokeni za naprave za push obvestila
     settings: Schema.Types.Mixed,

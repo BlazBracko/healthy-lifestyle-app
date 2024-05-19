@@ -25,15 +25,27 @@ exports.getUserById = async (req, res) => {
 exports.createUser = async (req, res) => {
     const { name, surname, username, email, password } = req.body;
     try {
-        //const existingUser = await User.findOne({ email });
-        //if (existingUser) {
-        //    return res.status(409).json({ message: "User already exists!" });
-        //}
-        const user = new User({ name, surname, username, email, password });
+        console.log("Attempting to create user...");
+        //const user = new User({ name, surname, username, email, password });
+        const user = new User({
+            name: 'Blaz',
+            surname: 'Bracko',
+            username: 'blazbracko',
+            email: 'blaz.bracko03@example.com',
+            password: 'Blaz.123'
+        });
+
+        console.log("Encrypting password...");
         await user.encryptPassword(password);
+        console.log("Password encrypted:", user.hashedPassword);
+
+        console.log("Saving user...");
         const newUser = await user.save();
+        console.log("User saved:", newUser);
+
         res.status(201).json(newUser);
     } catch (err) {
+        console.error("Error during user creation:", err);
         res.status(500).json({ message: err.message });
     }
 };

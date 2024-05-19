@@ -1,24 +1,14 @@
 const Weather = require('../models/Weather');
+const { scrapeWeather } = require('../scrapper/Weatherscrapper'); // Ensure this path matches where your scrapper.js file is located.
 
 // Ustvari novo vremensko napoved
 exports.createWeather = async (req, res) => {
   try {
-    const { temperature, humidity, windSpeed, weatherDescription, precipitation } = req.body;
-
-    const newWeather = new Weather({
-      temperature,
-      humidity,
-      windSpeed,
-      weatherDescription,
-      precipitation
-    });
-
-    const savedWeather = await newWeather.save();
-
-    res.status(201).json(savedWeather);
+    await scrapeWeather(); // This function should handle the entire scrape and save process
+    res.status(200).json({ message: 'Weather data scraped and saved successfully' });
   } catch (error) {
-    console.error('Error creating weather entry:', error.message);
-    res.status(500).json({ error: 'Failed to create weather entry' });
+    console.error('Failed to scrape and save weather data:', error);
+    res.status(500).json({ error: 'Failed to scrape and save weather data' });
   }
 };
 
