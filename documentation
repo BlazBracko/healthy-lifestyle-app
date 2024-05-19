@@ -96,6 +96,8 @@ PREGLED KONTROLERJEV
 PREGLED SCRAPPER
 V mapi backend je bila ustvarjena mapa Scrapper znotraj nje se pa nahaja datoteka weatherScrapper.js. Datoteka vsebuje kodo, ki ko se izvede opravi API klic na spletno stran OpenWeather s katere naloži vremenske podatke v JSON datoteko. Program nato iz JSON datotek izlušči pomembne vremenske podatke, ki se nato shranijo v novo "formatirano" JSON datoteko. Tako imamo zaradi lažje preglednosti na voljo 1. JSON datoteko z originalnimi podatki in 2. JSON datoteko s formatiranimi podatki. Na koncu se urejeni podatki iz JSON datoteke shranijo v podatkovno bazo pod entiteto weathers.
 
+V mapi backend pa je bila ustvarjena tudi datoteka .env, ki vsebuje API ključ, ki ga scrapper uporablja.
+
 Realni primer uporabe:
 
 Registracija novega uporabnika:
