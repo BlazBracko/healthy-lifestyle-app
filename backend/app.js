@@ -26,6 +26,7 @@ const authenticationRoutes = require('./routes/authenticationRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const sensorRoutes = require('./routes/sensorRoutes');
+const weatherRoutes = require('./routes/weatherRoutes');
 
 // Middleware
 app.use(cors({
@@ -41,13 +42,14 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-// Routes usage
+
 app.use('/users', userRoutes);
 app.use('/activities', activityRoutes);
 app.use('/authentication', authenticationRoutes);
 app.use('/devices', deviceRoutes);
 app.use('/messages', messageRoutes);
 app.use('/sensors', sensorRoutes);
+app.use('/weathers', weatherRoutes);
 
 // Error handler for 404 - Not Found
 app.use((req, res, next) => {
