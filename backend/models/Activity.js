@@ -15,8 +15,8 @@ const activitySchema = new Schema({
   caloriesBurned: Number,  // Porabljene kalorije
   stepCount: Number,  // Število korakov
   altitudeChanges: [{ time: Date, altitude: Number }],  // Spremembe nadmorske višine
-  weatherConditions: weather._id
-});
+  weatherConditions: { type: Schema.Types.ObjectId, ref: 'Weather' }
+  });
 
 // Nastavitev modela in izvoz
 const Activity = mongoose.model('Activity', activitySchema);

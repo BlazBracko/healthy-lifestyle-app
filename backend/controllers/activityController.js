@@ -26,7 +26,7 @@ exports.createActivity = async (req, res) => {
     const { userID, type, startTime, endTime, locationData, distance, caloriesBurned, stepCount, altitudeChanges, weatherConditions } = req.body;
 
     const activity = new Activity({
-        userID, type, startTime, endTime, locationData, distance, caloriesBurned, stepCount, altitudeChanges, weatherConditions
+        userID, type, startTime, endTime, locationData, distance, caloriesBurned, stepCount, altitudeChanges, weatherConditions: weather._id
     });
 
     try {
