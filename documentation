@@ -19,6 +19,9 @@ Pregled Shem
 6. Sensor Data Schema
 	-Fleksibilna shema za shranjevanje različnih vrst senzorskih podatkov, ki podpira raznolike vire podatkov kot so Face ID, pedometer, GPS, barometer in vremenski podatki. Fleksibilnost v tipu podatkov (value) omogoča lahko prilagoditev in razširitev.
 
+7. Weather Schema
+	-Vsebuje podatkovni model za shranjevanje vremenskih podatkov, kot so temperatura, vlažnost, hitrost vetra, opis vremena ter količino padavin(če je ta podatek na voljo). Če bo potrebno bomo dodali še dodatne atribute
+
 
 PREGLED KONTROLERJEV
 
@@ -80,6 +83,18 @@ PREGLED KONTROLERJEV
 	Primer uporabe:
     Med tekom uporabnikova naprava zbira podatke o korakih in lokaciji ter jih pošlje na strežnik z createSensorData.
 
+7. Weather kontroler - metode
+	getAllWeather-Pridobi vse vremenske podatke
+	getWeatherById-Pridobi posamezno vremensko napoved po ID
+	createWeather-Doda nove vremenske podatke
+	updateWeather-Posodobi obstoječe vremenske podatke
+	deleteWeather-Izbriše obstoječe vremenske podatke
+
+	Primer uporabe:
+	Uporabnik želi vedeti kakšni so vremenski podatki za kraj in čas kjer bo opravljal rekreacijo(telovadil, hodil, tekel)
+
+PREGLED SCRAPPER
+V mapi backend je bila ustvarjena mapa Scrapper znotraj nje se pa nahaja datoteka weatherScrapper.js. Datoteka vsebuje kodo, ki ko se izvede opravi API klic na spletno stran OpenWeather s katere naloži vremenske podatke v JSON datoteko. Program nato iz JSON datotek izlušči pomembne vremenske podatke, ki se nato shranijo v novo "formatirano" JSON datoteko. Tako imamo zaradi lažje preglednosti na voljo 1. JSON datoteko z originalnimi podatki in 2. JSON datoteko s formatiranimi podatki. Na koncu se urejeni podatki iz JSON datoteke shranijo v podatkovno bazo pod entiteto weathers.
 
 Realni primer uporabe:
 
