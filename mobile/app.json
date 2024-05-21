@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "mobile",
-    "slug": "mobile",
+    "owner": "blazbracko",
+    "slug": "mobile-f-smamsstlbfdx02jlhfw",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -31,6 +32,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "8b309b3b-ad85-4a75-92c8-c1f211cbd1b4"
+      }
     }
   }
 }

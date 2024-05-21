@@ -10,6 +10,7 @@ router.get('/:id', userController.getUserById);
 
 // Dodaj novega uporabnika
 router.post('/', userController.createUser);
+router.post('/notif', userController.sendNotification);
 
 // Posodobi obstoječega uporabnika
 router.put('/:id', userController.updateUser);

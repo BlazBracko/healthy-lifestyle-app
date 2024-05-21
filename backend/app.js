@@ -30,8 +30,6 @@ const weatherRoutes = require('./routes/weatherRoutes');
 
 // Middleware
 app.use(cors({
-  credentials: true,
-  origin: ['http://localhost:3000', 'http://localhost:3001']  // Update to match your frontend URL and port
 }));
 app.use(bodyParser.json());
 app.use(express.json());

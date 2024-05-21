@@ -1,4 +1,9 @@
 const User = require('../models/User');
+const { Expo } = require('expo-server-sdk');
+const axios = require('axios');
+
+let expo = new Expo();
+
 
 // Funkcija za pridobivanje vseh uporabnikov
 exports.getAllUsers = async (req, res) => {
@@ -23,25 +28,41 @@ exports.getUserById = async (req, res) => {
 
 // Funkcija za dodajanje novega uporabnika
 exports.createUser = async (req, res) => {
-    const { name, surname, username, email, password } = req.body;
+    const { name, surname, username, email, password, token } = req.body;
+
+    // Validate the push token
+    if (token && !Expo.isExpoPushToken(token)) {
+        return res.status(400).send({ error: 'Invalid Expo push token' });
+    }
+
     try {
         console.log("Attempting to create user...");
-        //const user = new User({ name, surname, username, email, password });
-        const user = new User({
-            name: 'Blaz',
-            surname: 'Bracko',
-            username: 'blazbracko',
-            email: 'blaz.bracko03@example.com',
-            password: 'Blaz.123'
-        });
+        const user = new User({ name, surname, username, email, password, deviceTokens: token ? [token] : [] });
 
-        console.log("Encrypting password...");
+        // Assuming encryptPassword is an asynchronous method that hashes the password
         await user.encryptPassword(password);
-        console.log("Password encrypted:", user.hashedPassword);
 
-        console.log("Saving user...");
         const newUser = await user.save();
-        console.log("User saved:", newUser);
+
+        // Send a welcome notification if a push token is provided
+        if (token) {
+            const messages = [{
+                to: token,
+                sound: 'default',
+                title: 'Welcome to Our App!',
+                body: 'Thank you for registering.',
+                data: { withSome: 'data' },
+            }];
+
+            // Send the notification through Expo's push API
+            try {
+                let ticketChunk = await expo.sendPushNotificationsAsync(messages);
+                console.log('Notification ticket:', ticketChunk);
+                // Additional handling for ticket response may be necessary
+            } catch (error) {
+                console.error("Failed to send notification:", error);
+            }
+        }
 
         res.status(201).json(newUser);
     } catch (err) {
@@ -49,6 +70,45 @@ exports.createUser = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+// Funkcija za dodajanje novega uporabnika
+exports.sendNotification = async (req, res) => {
+    try {
+        console.log("delastari");
+        // Find the first user in the database
+        const user = await User.findOne();
+        if (!user || !user.deviceTokens || user.deviceTokens.length === 0) {
+            return res.status(404).json({ message: 'No user with a push token found' });
+        }
+
+        const pushToken = user.deviceTokens[0];
+
+        // Create the notification message
+        const message = {
+            to: pushToken,
+            sound: 'default',
+            title: 'New Notification',
+            body: 'This is a test notification',
+            data: { url: 'yourapp://faceid' }, // Include the deep link URL
+        };
+
+        // Send the notification through Expo's push API
+        const response = await axios.post('https://exp.host/--/api/v2/push/send', message, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+        });
+
+        res.status(200).json(response.data);
+    } catch (error) {
+        console.error('Error sending notification:', error);
+        res.status(500).json({ message: 'Failed to send notification' });
+    }
+};
+
+
+
 
 // Funkcija za posodabljanje obstoječega uporabnika
 exports.updateUser = async (req, res) => {
