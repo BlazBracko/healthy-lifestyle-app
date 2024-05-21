@@ -13,7 +13,7 @@ function Register() {
 
     async function handleRegister(e) {
         e.preventDefault();
-        const res = await fetch("http://localhost:3000/users", {
+        const res = await fetch("http://localhost:3001/users", {
             method: "POST",
             credentials: "include",
             headers: { 'Content-Type': 'application/json' },

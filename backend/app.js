@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
 // MongoDB URI
 const uri = "mongodb+srv://blazbracko:yf78zKhBDPNRRtzY@hla.qyrwqwy.mongodb.net/?retryWrites=true&w=majority&appName=HLA";

@@ -1,5 +1,5 @@
 const Weather = require('../models/Weather');
-const { scrapeWeather } = require('../scrapper/Weatherscrapper'); // Ensure this path matches where your scrapper.js file is located.
+const { scrapeWeather } = require('../scrapper/weatherScrapper'); // Ensure this path matches where your scrapper.js file is located.
 
 // Ustvari novo vremensko napoved
 exports.createWeather = async (req, res) => {
