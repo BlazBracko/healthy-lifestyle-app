@@ -3,7 +3,7 @@ import React from 'react';
 function WeatherButton() {
   const handleScrapeWeather = async () => {
     try {
-      const response = await fetch('http://localhost:3000/weathers', {
+      const response = await fetch('http://localhost:3001/weathers', {
         method: 'POST', // Assuming you're using POST to trigger the scrape
       });
       const result = await response.json();
