@@ -1,6 +1,7 @@
 import { useContext } from "react";
-import { UserContext } from "../userContext";  // Adjust the path as necessary
+import { UserContext } from "../userContext"; 
 import { Link } from "react-router-dom";
+import "./Header.css"
 
 function Header(props) {
     return (
@@ -19,9 +20,8 @@ function Header(props) {
                                 </>
                             :
                                 <>
-                                    <li className="nav-item"><Link to='/register' className="nav-link">Register</Link></li>
+                                    <li className="nav-item"><Link to='/login' className="nav-link">Login</Link></li>
                                 </>
-
                         )}
                     </UserContext.Consumer>
                 </ul>

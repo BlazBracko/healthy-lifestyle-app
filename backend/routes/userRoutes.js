@@ -9,8 +9,11 @@ router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUserById);
 
 // Dodaj novega uporabnika
-router.post('/', userController.createUser);
+router.post('/register', userController.createUser);
 router.post('/notif', userController.sendNotification);
+
+//Login
+router.post('/login', userController.login);
 
 // Posodobi obstoječega uporabnika
 router.put('/:id', userController.updateUser);

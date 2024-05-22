@@ -2,8 +2,11 @@ version: '3.8'
 services:
   backend:
     build: ./backend
-    ports: "3001:3001"
-  environment: MONGO_DB_URI=mongodb+srv://blazbracko:yf78zKhBDPNRRtzY@hla.qyrwqwy.mongodb.net/?retryWrites=true&w=majority&appName=HLA
-web:
-  build: ./web
-  ports: "3000:3000"
+    ports: 
+      - "3001:3001"
+    environment: 
+      MONGO_DB_URI: "mongodb+srv://blazbracko:yf78zKhBDPNRRtzY@hla.qyrwqwy.mongodb.net/?retryWrites=true&w=majority&appName=HLA"
+  web:
+    build: ./web
+    ports: 
+      - "3000:3000"

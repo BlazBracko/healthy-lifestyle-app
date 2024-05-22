@@ -1,6 +1,9 @@
 import React, { useContext, useState } from 'react';
-import { UserContext } from "../userContext";  // Make sure this path is correct
+import { UserContext } from "../userContext";
 import { Navigate } from 'react-router-dom';
+import Button from '../components/Button';
+import Input from '../components/Input'; 
+import './Register.css'
 
 function Register() {
     const { user, setUserContext } = useContext(UserContext);
@@ -13,7 +16,7 @@ function Register() {
 
     async function handleRegister(e) {
         e.preventDefault();
-        const res = await fetch("http://localhost:3001/users", {
+        const res = await fetch("http://localhost:3001/users/register", {
             method: "POST",
             credentials: "include",
             headers: { 'Content-Type': 'application/json' },
@@ -36,13 +39,13 @@ function Register() {
 
     return (
         <form className="register-form" onSubmit={handleRegister}>
-            <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-            <input type="text" placeholder="Surname" value={surname} onChange={(e) => setSurname(e.target.value)} />
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button type="submit">Register</button>
-            <label>{error}</label>
+            <Input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+            <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input type="text" placeholder="Surname" value={surname} onChange={(e) => setSurname(e.target.value)} />
+            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Button type="submit" title="Register" />
+            <label className="error-message">{error}</label>
         </form>
     );
 }

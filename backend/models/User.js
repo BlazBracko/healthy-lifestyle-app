@@ -13,7 +13,7 @@ const userSchema = new Schema({
     email: { type: String, unique: true, required: true },
     hashedPassword: { type: String, required: true },
     faceIDData: Buffer, // Biometrični podatki obraza
-    mqttClientID: { type: String, /*unique: true,sparse: true */}, // Make the field sparse to ignore null values
+    //mqttClientID: { type: String, /*unique: true,sparse: true */}, // Make the field sparse to ignore null values
     platform: String, // Platforma uporabnika, npr. 'iOS', 'Android', 'Web'
     deviceTokens: [String], // Tokeni za naprave za push obvestila
     settings: Schema.Types.Mixed,

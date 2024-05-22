@@ -30,6 +30,9 @@ const weatherRoutes = require('./routes/weatherRoutes');
 
 // Middleware
 app.use(cors({
+  origin: 'http://localhost:3000', //  glede na izvor frontend aplikacije
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // Omogočite pošiljanje poverilnic
 }));
 app.use(bodyParser.json());
 app.use(express.json());

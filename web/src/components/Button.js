@@ -1,8 +1,10 @@
 import React from 'react';
-import Button from '../../../common/components/Button';
+import './Button.css';
 
-const WebButton = ({ title, onClick }) => (
-  <Button title={title} onPress={onClick} />
+const Button = ({ title, onClick, type }) => (
+  <button type={type} onClick={onClick} className="custom-button">
+    {title}
+  </button>
 );
 
-export default WebButton;
+export default Button;

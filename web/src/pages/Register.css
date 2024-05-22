@@ -1,0 +1,23 @@
+.register-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.error-message {
+    color: red;
+    margin-top: 10px;
+}
+
+.register-form button {
+    width: 300px;
+}
+
+.sign-up-link {
+    text-decoration: none;
+    color: #007bff;
+}
+
+.sign-up-link:hover {
+    text-decoration: underline;
+}
