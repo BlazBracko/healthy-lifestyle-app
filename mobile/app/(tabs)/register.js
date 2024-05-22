@@ -1,13 +1,8 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-//import { StyleSheet, Image, Platform } from 'react-native';
-
 import React, { useState } from 'react';
-
 import { View, Text, TextInput, Button, StyleSheet, ScrollView, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-
-export default function TabTwoScreen() {
+const Register = () => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
@@ -15,7 +10,6 @@ export default function TabTwoScreen() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
-    // Function to register for push notifications
     async function registerForPushNotificationsAsync() {
         let token;
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -26,16 +20,11 @@ export default function TabTwoScreen() {
         }
         
         if (finalStatus === 'granted') {
-            // Replace `your-project-id` with your actual project ID
-            token = (await Notifications.getExpoPushTokenAsync({
-                projectId: '8b309b3b-ad85-4a75-92c8-c1f211cbd1b4',
-            })).data;
+            token = (await Notifications.getExpoPushTokenAsync()).data;
         }
-    
 
         return token;
     }
-
 
     const handleRegister = async () => {
         if (!username || !email || !name || !surname || !password) {
@@ -49,10 +38,9 @@ export default function TabTwoScreen() {
             Alert.alert("Failed to get a push token");
             return;
         }
-        // Here you would typically also add more validation before sending the request
 
         try {
-            const response = await fetch('http://164.8.207.119:3001/users', { //IP-najdi
+            const response = await fetch('http://164.8.207.119:3001/users/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -69,7 +57,6 @@ export default function TabTwoScreen() {
                 setSurname('');
                 setPassword('');
                 setError('');
-                // Navigate to another screen or reset the form, etc.
             } else {
                 setError(jsonData.message || "Registration failed");
                 Alert.alert("Registration Failed", jsonData.message);
@@ -128,13 +115,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-        backgroundColor: '#000', // Assuming you want a black background
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
         marginBottom: 20,
-        color: '#FFF', // White color for the title text
     },
     input: {
         height: 40,
@@ -143,8 +128,6 @@ const styles = StyleSheet.create({
         borderColor: '#FFF', // Optional: makes the border visible
         padding: 10,
         borderRadius: 5,
-        color: '#FFF', // White color for the input text
-        backgroundColor: '#333', // Slightly lighter background for the inputs
     },
     buttonContainer: {
         marginTop: 20,
@@ -154,3 +137,5 @@ const styles = StyleSheet.create({
         marginTop: 10,
     }
 });
+
+export default Register;

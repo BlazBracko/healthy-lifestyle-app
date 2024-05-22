@@ -2,11 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import BiometricsCapture from './src/screens/BiometricsCapture'; // Adjust the path as necessary
-import HomeScreen from './src/screens/HomeScreen'; // Adjust the path as necessary
-import FaceIDScreen from './src/screens/FaceIdScreen'; // Import your FaceID screen
-import * as Permissions from 'expo-permissions';
-import { Platform } from 'react-native';
+import BiometricsCapture from './app/screens/BiometricsCapture'; // Adjust the path as necessary
+import HomeScreen from './app/screens/HomeScreen'; // Adjust the path as necessary
+import FaceIDScreen from './app/screens/FaceIdScreen'; // Import your FaceID screen
+import { UserProvider } from './src/context/UserContext'; // Pravilno uvozite UserProvider
 import * as Linking from 'expo-linking';
 
 const Stack = createNativeStackNavigator();
@@ -36,15 +35,16 @@ export default function App() {
   const navigationRef = useRef();
 
   useEffect(() => {
-    // Ask for notification permissions on iOS
-    Permissions.getAsync(Permissions.NOTIFICATIONS).then(({ status }) => {
+    // Ask for notification permissions on iOS and Android
+    Notifications.requestPermissionsAsync().then(({ status }) => {
       if (status !== 'granted') {
-        return Permissions.askAsync(Permissions.NOTIFICATIONS);
+        console.warn('Notification permissions not granted');
       }
     });
 
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       // Handle notification received while the app is foregrounded
+      console.log('Notification received:', notification);
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
@@ -68,12 +68,15 @@ export default function App() {
   }, []);
 
   return (
-    <NavigationContainer linking={linking} ref={navigationRef}>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="FaceID" component={FaceIDScreen} />
-        <Stack.Screen name="BiometricsCapture" component={BiometricsCapture} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <UserProvider>
+      <NavigationContainer linking={linking} ref={navigationRef}>
+        <Stack.Navigator initialRouteName="Home">
+          <Stack.Screen name="Home" component={HomeScreen}  options={{ title: 'Home' }}/>
+          <Stack.Screen name="FaceID" component={FaceIDScreen}  options={{ title: 'FaceID' }}/>
+          <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
+          <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Register' }} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </UserProvider>
   );
 }
