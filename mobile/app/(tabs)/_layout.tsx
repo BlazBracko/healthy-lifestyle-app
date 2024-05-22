@@ -1,38 +1,23 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useContext } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { UserContext } from '../context/userContext';
+import HomeScreen from '../screens/HomeScreen';
+import LoginScreen from '../screens/LoginScreen';
+import ProfileScreen from '../screens/ProfileScreen'; 
 
-import { TabBarIcon } from '@/components/navigation/TabBarIcon';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+const Tab = createBottomTabNavigator();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function Tabs() {
+  const { user } = useContext(UserContext);
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="register"
-        options={{
-          title: 'Register',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
-          ),
-        }}
-      />
-
-    </Tabs>
+    <Tab.Navigator>
+      <Tab.Screen name="Home" component={HomeScreen} />
+      {user ? (
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+      ) : (
+        <Tab.Screen name="Login" component={LoginScreen} />
+      )}
+    </Tab.Navigator>
   );
 }

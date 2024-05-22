@@ -2,10 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import BiometricsCapture from './app/screens/BiometricsCapture'; // Adjust the path as necessary
-import HomeScreen from './app/screens/HomeScreen'; // Adjust the path as necessary
-import FaceIDScreen from './app/screens/FaceIdScreen'; // Import your FaceID screen
-import { UserProvider } from './src/context/UserContext'; // Pravilno uvozite UserProvider
+import BiometricsCapture from './app/screens/BiometricsCapture';
+import HomeScreen from './app/screens/HomeScreen'; 
+import FaceIDScreen from './app/screens/FaceIdScreen'; 
+import RegisterScreen from './app/screens/RegisterScreen';
+import { UserProvider } from './src/context/UserContext'; 
 import * as Linking from 'expo-linking';
 
 const Stack = createNativeStackNavigator();
@@ -16,7 +17,9 @@ const linking = {
     screens: {
       Home: 'home',
       FaceID: 'faceid',
-      BiometricsCapture: 'biometricscapture'
+      BiometricsCapture: 'biometricscapture',
+      Login: 'login',
+      Register: 'register'
     },
   },
 };
