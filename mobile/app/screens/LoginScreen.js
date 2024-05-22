@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { UserContext } from '../context/userContext'; // Pravilno uvozite kontekst
 
 const Login = () => {
-    const { setUser } = useContext(UserContext); // Uporabite pravilno ime funkcije
+    const { login } = useContext(UserContext); // Uporabite pravilno ime funkcije
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -22,7 +22,7 @@ const Login = () => {
             const data = await res.json();
             if (res.status === 200) {
                 if (data.user) {
-                    setUser(data.user); // Nastavite uporabnika v kontekstu
+                    login(data.user); // Nastavite uporabnika v kontekstu
                     navigation.navigate("Home"); // Navigirajte na domačo stran
                 } else {
                     setError("Invalid credentials or login failed");

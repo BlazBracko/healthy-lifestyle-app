@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ScrollView, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-const Register = () => {
+const RegisterScreen = () => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
@@ -138,4 +138,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default Register;
+export default RegisterScreen;

@@ -6,7 +6,7 @@ const HomeScreen = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    axios.get('http://localhost:3001/')
+    axios.get('http://164.8.207.119:3001/')
       .then(response => {
         setMessage(response.data);
       })
@@ -17,7 +17,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text>{message}</Text>
+      <Text>Hello</Text>
     </View>
   );
 };
