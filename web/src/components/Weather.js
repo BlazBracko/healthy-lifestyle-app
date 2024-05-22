@@ -1,4 +1,5 @@
 import React from 'react';
+import Button from './Button'
 
 function WeatherButton() {
   const handleScrapeWeather = async () => {
@@ -22,7 +23,7 @@ function WeatherButton() {
 
   return (
     <div>
-      <button onClick={handleScrapeWeather}>Scrape Weather Data</button>
+      <Button onClick={handleScrapeWeather} title="Scrape Weather Data"></Button>
     </div>
   );
 }

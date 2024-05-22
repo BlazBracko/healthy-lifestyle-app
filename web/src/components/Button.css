@@ -1,0 +1,17 @@
+/* Button.css */
+.custom-button {
+    background-color: rgb(52, 94, 184);
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+    text-align: center;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.8s;
+    margin: 5px;
+  }
+  
+  .custom-button:hover {
+    background-color: darkblue;
+  }
+  

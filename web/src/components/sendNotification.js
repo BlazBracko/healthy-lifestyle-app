@@ -1,5 +1,6 @@
 import React from 'react';
 import axios from 'axios';
+import Button from './Button'
 
 const SendNotificationButton = () => {
     const sendNotification = async () => {
@@ -14,7 +15,7 @@ const SendNotificationButton = () => {
 
     return (
         <div>
-            <button onClick={sendNotification}>Send Notification</button>
+            <Button onClick={sendNotification} title="Send Notification"></Button>
         </div>
     );
 };

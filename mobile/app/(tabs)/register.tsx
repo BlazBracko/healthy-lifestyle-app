@@ -52,7 +52,7 @@ export default function TabTwoScreen() {
         // Here you would typically also add more validation before sending the request
 
         try {
-            const response = await fetch('http://172.20.10.5:3001/users', {
+            const response = await fetch('http://164.8.207.119:3001/users', { //IP-najdi
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

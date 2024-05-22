@@ -109,7 +109,6 @@ exports.sendNotification = async (req, res) => {
 
 
 
-
 // Funkcija za posodabljanje obstoječega uporabnika
 exports.updateUser = async (req, res) => {
     try {
@@ -139,6 +138,27 @@ exports.deleteUser = async (req, res) => {
 
         await user.remove();
         res.status(200).json({ message: 'User deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Funkcija za prijavo uporabnika
+exports.login = async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid username' });
+        }
+
+        const isMatch = await user.checkPassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        res.json({ user: { id: user._id, username: user.username, email: user.email } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
