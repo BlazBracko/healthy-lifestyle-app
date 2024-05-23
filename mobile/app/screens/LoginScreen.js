@@ -23,7 +23,7 @@ const Login = () => {
             if (res.status === 200) {
                 if (data.user) {
                     login(data.user); // Nastavite uporabnika v kontekstu
-                    navigation.navigate("Home"); // Navigirajte na domačo stran
+                    navigation.navigate("FaceId"); // Navigirajte na domačo stran
                 } else {
                     setError("Invalid credentials or login failed");
                 }

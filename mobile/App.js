@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BiometricsCapture from './app/screens/BiometricsCapture';
 import HomeScreen from './app/screens/HomeScreen'; 
-import FaceIDScreen from './app/screens/FaceIdScreen'; 
+import FaceIdScreen from './app/screens/FaceIdScreen'; 
 import RegisterScreen from './app/screens/RegisterScreen';
 import { UserProvider } from './src/context/UserContext'; 
 import * as Linking from 'expo-linking';
@@ -75,7 +75,7 @@ export default function App() {
       <NavigationContainer linking={linking} ref={navigationRef}>
         <Stack.Navigator initialRouteName="Home">
           <Stack.Screen name="Home" component={HomeScreen}  options={{ title: 'Home' }}/>
-          <Stack.Screen name="FaceID" component={FaceIDScreen}  options={{ title: 'FaceID' }}/>
+          <Stack.Screen name="FaceId" component={FaceIdScreen}  options={{ title: 'FaceId' }}/>
           <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
           <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Register' }} />
         </Stack.Navigator>
