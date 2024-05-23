@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useState, useEffect, useRef } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, StyleSheet, Text, View, Pressable } from 'react-native';
 import axios from 'axios';
 
 const FaceIdScreen = () => {
@@ -8,6 +8,8 @@ const FaceIdScreen = () => {
   const cameraRef = useRef(null);
 
   const [hasPermission, setHasPermission] = useState(false);
+  const [response, setResponse] = useState(null);
+  const [error, setError] = useState(null); // Novo stanje za napake
 
   useEffect(() => {
     (async () => {
@@ -33,7 +35,10 @@ const FaceIdScreen = () => {
 
   const takePicture = async () => {
     if (cameraRef.current) {
+      console.log('Taking picture...');
       let photo = await cameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
+      console.log('Picture taken:', photo);
+
       const data = new FormData();
       data.append('photo', {
         uri: photo.uri,
@@ -41,13 +46,17 @@ const FaceIdScreen = () => {
         type: 'image/jpg'
       });
 
+      console.log('Sending picture to server...');
       // Pošlji sliko na strežnik
-      axios.post('http://your-server-ip:3000/api/recognize', data)
+      axios.post('http://164.8.207.119:3001/recognize', data)
         .then(response => {
-          console.log(response.data);
+          console.log('Server response:', response.data);
+          setResponse(response.data);  // Shranjevanje odgovora v stanje
+          setError(null); // Počistite napako, če je klic uspešen
         })
         .catch(error => {
-          console.error(error);
+          console.error('Error sending picture:', error);
+          setError(error.message); // Shranjevanje napake v stanje
         });
     }
   };
@@ -64,8 +73,22 @@ const FaceIdScreen = () => {
 
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} ref={cameraRef} facing="back">
+      <CameraView style={styles.camera} ref={cameraRef} facing="front">
         <View style={styles.buttonContainer}>
+          {/* Prikaz JSON odgovora */}
+          {response && (
+            <View style={styles.responseContainer}>
+              <Text style={styles.text}>Response:</Text>
+              <Text style={styles.text}>{JSON.stringify(response, null, 2)}</Text>
+            </View>
+          )}
+          {/* Prikaz napake */}
+          {error && (
+            <View style={styles.responseContainer}>
+              <Text style={styles.text}>Error:</Text>
+              <Text style={styles.text}>{error}</Text>
+            </View>
+          )}
         </View>
       </CameraView>
     </View>
@@ -85,6 +108,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'transparent',
     margin: 64,
+  },
+  responseContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 10,
+  },
+  text: {
+    fontSize: 18,
+    color: 'white',
   },
 });
 
