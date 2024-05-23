@@ -3,7 +3,7 @@ name: Weather Scrapper Tests
 on:
   push:
     branches:
-      - HLA-26
+      - main
   pull_request:
     branches:
       - main
