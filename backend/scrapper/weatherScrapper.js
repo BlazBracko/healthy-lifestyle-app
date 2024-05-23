@@ -70,5 +70,8 @@ const formatData = (data) => {
 //scrapeWeather();
 
 module.exports = {
+  fetchWeatherData,
+  saveJSONToFile,
+  formatData,
   scrapeWeather,
 };
