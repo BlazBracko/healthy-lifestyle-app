@@ -10,6 +10,7 @@ const FaceIdScreen = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null); // Novo stanje za napake
+  const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -24,38 +25,40 @@ const FaceIdScreen = () => {
 
   useEffect(() => {
     if (hasPermission) {
-      // Zamika zajema slike za 5 sekund
+      // Zamika zajema videa za 5 sekund
       const timer = setTimeout(() => {
-        takePicture();
+        startRecording();
       }, 5000);
 
       return () => clearTimeout(timer);
     }
   }, [hasPermission]);
 
-  const takePicture = async () => {
+  const startRecording = async () => {
     if (cameraRef.current) {
-      console.log('Taking picture...');
-      let photo = await cameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
-      console.log('Picture taken:', photo);
+      console.log('Starting video recording...');
+      setIsRecording(true);
+      let video = await cameraRef.current.recordAsync({ quality: '480p', maxDuration: 10 });
+      console.log('Video recorded:', video);
+      setIsRecording(false);
 
       const data = new FormData();
-      data.append('photo', {
-        uri: photo.uri,
-        name: 'photo.jpg',
-        type: 'image/jpg'
+      data.append('video', {
+        uri: video.uri,
+        name: 'video.mp4',
+        type: 'video/mp4'
       });
 
-      console.log('Sending picture to server...');
-      // Pošlji sliko na strežnik
-      axios.post('http://164.8.207.119:3001/recognize', data)
+      console.log('Sending video to server...');
+      // Pošlji video na strežnik
+      axios.post('http://192.168.1.129:3001/recognize', data)
         .then(response => {
           console.log('Server response:', response.data);
           setResponse(response.data);  // Shranjevanje odgovora v stanje
           setError(null); // Počistite napako, če je klic uspešen
         })
         .catch(error => {
-          console.error('Error sending picture:', error);
+          console.error('Error sending video:', error);
           setError(error.message); // Shranjevanje napake v stanje
         });
     }
