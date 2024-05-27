@@ -6,7 +6,7 @@ const HomeScreen = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    axios.get('http://164.8.207.119:3001/')
+    axios.get('http://172.20.10.5:3001/')
       .then(response => {
         setMessage(response.data);
       })

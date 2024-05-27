@@ -3,39 +3,47 @@ const path = require('path');
 const { PythonShell } = require('python-shell');
 const fs = require('fs');
 
+// Configure multer for video files
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}${path.extname(file.originalname)}`);
   }
 });
 
-const upload = multer({ storage: storage });
+const fileFilter = (req, file, cb) => {
+  // Accept videos only
+  if (file.mimetype.startsWith('video/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not a video file!'), false);
+  }
+};
 
-const recognizeFace = (req, res) => {
-  console.log('recognizeFace called');
+const uploadVideo = multer({ storage: storage, fileFilter: fileFilter });
+
+const processVideo = (req, res) => {
   if (!req.file) {
-    console.error('No file uploaded');
-    return res.status(400).json({ error: 'No file uploaded.' });
+    return res.status(400).json({ error: 'No video file uploaded.' });
   }
 
-  const imagePath = req.file.path;
-  console.log('Image path:', imagePath);
+  const videoPath = req.file.path;
+  console.log('Video path:', videoPath);
 
-  const scriptPath = path.join(__dirname, '../recognize.py');
+  // Example: Integrate Python processing or any other logic
+  const scriptPath = path.join(__dirname, '../dataSet.py');
   console.log('Script path:', scriptPath);
 
   const options = {
     mode: 'text',
-    pythonOptions: ['-u'], // Unbuffered output
+    pythonOptions: ['-u'],
     scriptPath: path.dirname(scriptPath),
-    args: [imagePath]
+    args: [videoPath]
   };
 
-  console.log('Running Python script...');
-  PythonShell.run('recognize.py', options, (err, results) => {
+  PythonShell.run('dataSet.py', options, (err, results) => {
     if (err) {
       console.error('Error running Python script:', err);
       return res.status(500).json({ error: 'Error running Python script.' });
@@ -43,7 +51,6 @@ const recognizeFace = (req, res) => {
 
     console.log('Python script finished');
     try {
-      console.log('Results from Python script:', results);
       const result = JSON.parse(results[0]);
       res.json(result);
     } catch (parseError) {
@@ -53,4 +60,4 @@ const recognizeFace = (req, res) => {
   });
 };
 
-module.exports = { upload, recognizeFace };
+module.exports = { uploadVideo, processVideo };

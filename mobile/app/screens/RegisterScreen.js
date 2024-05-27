@@ -40,7 +40,7 @@ const RegisterScreen = () => {
         }
 
         try {
-            const response = await fetch('http://164.8.207.119:3001/users/register', {
+            const response = await fetch('http://172.20.10.5:3001/users/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
