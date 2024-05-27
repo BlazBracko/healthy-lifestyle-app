@@ -12,7 +12,7 @@ const Login = () => {
 
     const handleLogin = async () => {
         try {
-            const res = await fetch("http://164.8.207.119:3001/users/login", {
+            const res = await fetch("http://172.20.10.5:3001/users/login", {
                 method: "POST",
                 credentials: "include",
                 headers: { 'Content-Type': 'application/json' },

@@ -1,96 +1,106 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useState, useEffect, useRef } from 'react';
-import { Button, StyleSheet, Text, View, Pressable } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { Camera } from 'expo-camera/legacy';
 import axios from 'axios';
 
 const FaceIdScreen = () => {
-  const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
-
-  const [hasPermission, setHasPermission] = useState(false);
-  const [response, setResponse] = useState(null);
-  const [error, setError] = useState(null); // Novo stanje za napake
+  const [hasPermission, setHasPermission] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
+    console.log(Camera);
     (async () => {
-      if (!permission) {
-        const { status } = await requestPermission();
-        setHasPermission(status === 'granted');
-      } else {
-        setHasPermission(permission.granted);
-      }
+      const cameraStatus = await Camera.requestCameraPermissionsAsync();
+      const audioStatus = await Camera.requestMicrophonePermissionsAsync();
+      setHasPermission(cameraStatus.status === 'granted' && audioStatus.status === 'granted');
     })();
-  }, [permission]);
+  }, []);
 
-  useEffect(() => {
-    if (hasPermission) {
-      // Zamika zajema slike za 5 sekund
-      const timer = setTimeout(() => {
-        takePicture();
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [hasPermission]);
-
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      console.log('Taking picture...');
-      let photo = await cameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
-      console.log('Picture taken:', photo);
-
-      const data = new FormData();
-      data.append('photo', {
-        uri: photo.uri,
-        name: 'photo.jpg',
-        type: 'image/jpg'
-      });
-
-      console.log('Sending picture to server...');
-      // Pošlji sliko na strežnik
-      axios.post('http://164.8.207.119:3001/recognize', data)
-        .then(response => {
-          console.log('Server response:', response.data);
-          setResponse(response.data);  // Shranjevanje odgovora v stanje
-          setError(null); // Počistite napako, če je klic uspešen
-        })
-        .catch(error => {
-          console.error('Error sending picture:', error);
-          setError(error.message); // Shranjevanje napake v stanje
+  const handleVideoRecording = async () => {
+    if (cameraRef.current && !isRecording) {
+      setIsRecording(true);
+      try {
+        const video = await cameraRef.current.recordAsync({
+          mute: true,
+          maxDuration: 10
         });
+        console.log('Video recorded:', video.uri);
+        uploadVideo(video.uri);
+      } catch (error) {
+        console.error('Recording error:', error);
+        setIsRecording(false);
+      }
+    } else {
+      stopRecording();
     }
   };
 
-  if (!permission || !hasPermission) {
-    // Camera permissions are still loading or not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
-        {!hasPermission && <Button onPress={requestPermission} title="grant permission" />}
-      </View>
-    );
+  const stopRecording = () => {
+    if (cameraRef.current && isRecording) {
+      cameraRef.current.stopRecording();
+      setIsRecording(false);
+    }
+  };
+
+  const uploadVideo = async (uri) => {
+    const formData = new FormData();
+    formData.append('video', {
+      uri,
+      name: 'video.mp4',
+      type: 'video/mp4',
+    });
+
+    try {
+
+     
+      const response = await fetch("http://172.20.10.5:3001/recognize", {
+        method: 'POST',
+        body: formData,
+        credentials: "include",
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log('Upload successful', responseData);
+      } else {
+        console.error(response);
+        console.error('Upload failed:', await response.text());
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
+  };
+
+  if (hasPermission === null) {
+    return <View style={styles.container}><Text>Requesting permissions...</Text></View>;
+  }
+
+  if (hasPermission === false) {
+    return <View style={styles.container}><Text>No access to camera or microphone.</Text></View>;
   }
 
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} ref={cameraRef} facing="front">
+      <Camera
+        style={styles.camera}
+        ref={cameraRef}
+        type={Camera.Constants.Type.front}
+      >
         <View style={styles.buttonContainer}>
-          {/* Prikaz JSON odgovora */}
-          {response && (
-            <View style={styles.responseContainer}>
-              <Text style={styles.text}>Response:</Text>
-              <Text style={styles.text}>{JSON.stringify(response, null, 2)}</Text>
-            </View>
-          )}
-          {/* Prikaz napake */}
-          {error && (
-            <View style={styles.responseContainer}>
-              <Text style={styles.text}>Error:</Text>
-              <Text style={styles.text}>{error}</Text>
-            </View>
-          )}
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleVideoRecording}
+            onLongPress={handleVideoRecording}
+            onPressOut={stopRecording}
+          >
+            <Text style={styles.text}>{isRecording ? 'Stop' : 'Record'}</Text>
+          </TouchableOpacity>
         </View>
-      </CameraView>
+      </Camera>
     </View>
   );
 };
@@ -99,28 +109,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   camera: {
     flex: 1,
+    width: '100%',
   },
   buttonContainer: {
     flex: 1,
-    flexDirection: 'row',
     backgroundColor: 'transparent',
-    margin: 64,
+    flexDirection: 'row',
+    margin: 20,
   },
-  responseContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 10,
+  button: {
+    flex: 0.1,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
   },
   text: {
     fontSize: 18,
     color: 'white',
-  },
+  }
 });
 
 export default FaceIdScreen;
