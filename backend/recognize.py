@@ -1,48 +1,60 @@
-# Logika za prepoznavo obraza
-
-# Sedaj samo test če sprejme sliko
-import sys
-import json
-import cv2
 import os
+import numpy as np
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from sklearn.metrics.pairwise import cosine_similarity
 
-def test_image_loading(image_path):
-    try:
-        # Preverjanje, ali datoteka obstaja
-        if not os.path.exists(image_path):
-            raise ValueError(f"Datoteka ne obstaja na poti: {image_path}")
+# Pot do mape s shranjenim modelom
+model_path = os.path.join('learned_model', 'face_recognition_model.keras')
+model = load_model(model_path)
 
-        # Nalaganje slike
-        img = cv2.imread(image_path)
-        if img is None:
-            raise ValueError("Slike ni mogoče naložiti.")
+# Velikost slik
+img_size = (150, 150)
 
-        # Preberemo osnovne informacije o sliki
-        height, width, channels = img.shape
-        result = {
-            "loaded": True,
-            "message": "Slika uspešno prebrana.",
-            "dimensions": {
-                "width": width,
-                "height": height,
-                "channels": channels
-            }
-        }
-    except Exception as e:
-        result = {
-            "loaded": False,
-            "message": "Slike ni mogoče prebrati.",
-            "error": str(e)
-        }
+# Prag podobnosti za prepoznavanje uporabnika (med 0 in 1)
+similarity_threshold = 0.9
 
-    return result
+# Funkcija za nalaganje in pripravo slik
+def load_and_prepare_image(image_path, img_size):
+    image = load_img(image_path, target_size=img_size)
+    image = img_to_array(image) / 255.0
+    image = np.expand_dims(image, axis=0)  # Dodaj dimenzijo za batch
+    return image
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        image_path = sys.argv[1]
-        print(f"Preverjanje poti: {image_path}")  # Dodano za preverjanje poti
-        print(f"Uporablja se Python verzija: {sys.version}")  # Dodano za izpis verzije Pythona
-        result = test_image_loading(image_path)
-        print(json.dumps(result))
-    else:
-        print(json.dumps({"error": "No image path provided"}))
+# Štetje slik v mapah
+uploads_dir = 'uploads'
+saved_users_dir = 'saved_users'
+
+uploads_count = len([f for f in os.listdir(uploads_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+saved_users_count = len([f for f in os.listdir(saved_users_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+
+print(f"Število slik v mapi 'uploads': {uploads_count}")
+print(f"Število slik v mapi 'saved_users': {saved_users_count}")
+
+# Naloži in pripravi slike
+upload_image_path = os.path.join(uploads_dir, os.listdir(uploads_dir)[0])
+saved_user_image_path = os.path.join(saved_users_dir, os.listdir(saved_users_dir)[0])
+
+upload_image = load_and_prepare_image(upload_image_path, img_size)
+saved_user_image = load_and_prepare_image(saved_user_image_path, img_size)
+
+# Pridobitev značilk iz modela
+upload_features = model.predict(upload_image)
+saved_user_features = model.predict(saved_user_image)
+
+# Izračun cosine podobnosti
+similarity = cosine_similarity(upload_features, saved_user_features)[0][0]
+print(f'Similarity: {similarity}')
+
+recognized = None  # Spremenljivka za shranjevanje rezultata prepoznavanja
+
+# Odločanje o identiteti uporabnika
+if similarity >= similarity_threshold:
+    print("user identified")
+    recognized = True
+else:
+    print("user not identified")
+    recognized = False
+
+# Vrnemo rezultat prepoznavanja
+print(recognized)
