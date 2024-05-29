@@ -1,118 +1,53 @@
 import os
-import shutil
 import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Input, BatchNormalization
+from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
-from tensorflow.keras.optimizers import Adam
-import keras_tuner as kt
+from sklearn.metrics.pairwise import cosine_similarity
 
-# Pot do slikovne mape
-data_dir = 'samples'
+# Pot do mape s shranjenim modelom
+model_path = os.path.join('learned_model', 'face_recognition_model.keras')
+model = load_model(model_path)
+
+# Velikost slik
 img_size = (150, 150)
-batch_size = 32
 
-# Funkcija za nalaganje slik in pripravo oznak
-def load_images_and_labels(data_dir):
-    images = []
-    labels = []
-    files = os.listdir(data_dir)
-    # print(f"Datoteke v mapi '{data_dir}': {files}")
-    for index, filename in enumerate(files):
-        if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-            img_path = os.path.join(data_dir, filename)
-            # print(f"Nalaganje slike: {img_path}")
-            try:
-                image = load_img(img_path, target_size=img_size)
-                image = img_to_array(image) / 255.0  # Normalizacija slike
-                images.append(image)
-                labels.append(index)  # Vsaki sliki dodelimo edinstveno oznako
-            except Exception as e:
-                print(f"Napaka pri nalaganju slike {filename}: {e}")
-    return np.array(images), np.array(labels)
+# Prag podobnosti za prepoznavanje uporabnika (med 0 in 1)
+similarity_threshold = 0.5
 
-# Nalaganje slik in oznak
-images, labels = load_images_and_labels(data_dir)
+# Funkcija za nalaganje in pripravo slik
+def load_and_prepare_image(image_path, img_size):
+    image = load_img(image_path, target_size=img_size)
+    image = img_to_array(image) / 255.0
+    image = np.expand_dims(image, axis=0)  # Dodaj dimenzijo za batch
+    return image
 
-# Razdelitev podatkov na učni in testni set
-def train_test_split_manual(images, labels, test_size=0.2):
-    np.random.seed(42)  # Za ponovljivost
-    indices = np.arange(len(images))
-    np.random.shuffle(indices)
-    
-    split_index = int(len(images) * (1 - test_size))
-    
-    train_indices = indices[:split_index]
-    test_indices = indices[split_index:]
-    
-    X_train = images[train_indices]
-    X_test = images[test_indices]
-    y_train = labels[train_indices]
-    y_test = labels[test_indices]
-    
-    return X_train, X_test, y_train, y_test
+# Štetje slik v mapah
+uploads_dir = 'uploads'
+saved_users_dir = 'saved_users'
 
-# Razdelitev podatkov
-X_train, X_test, y_train, y_test = train_test_split_manual(images, labels, test_size=0.2)
+uploads_count = len([f for f in os.listdir(uploads_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+saved_users_count = len([f for f in os.listdir(saved_users_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
 
-num_classes = len(np.unique(labels))  # Število razredov mora biti enako 50
+print(f"Število slik v mapi 'uploads': {uploads_count}")
+print(f"Število slik v mapi 'saved_users': {saved_users_count}")
 
-print(f"Number of classes: {num_classes}")  # Preverimo, če je število razredov pravilno
+# Naloži in pripravi slike
+upload_image_path = os.path.join(uploads_dir, os.listdir(uploads_dir)[0])
+saved_user_image_path = os.path.join(saved_users_dir, os.listdir(saved_users_dir)[0])
 
-# Definicija modela za iskanje hiperparametrov
-def build_model(hp, num_classes):
-    model = Sequential()
-    model.add(Input(shape=(img_size[0], img_size[1], 3)))
-    model.add(Conv2D(filters=hp.Int('conv_1_filters', min_value=32, max_value=128, step=16), kernel_size=(3, 3), activation='relu'))
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(filters=hp.Int('conv_2_filters', min_value=32, max_value=128, step=16), kernel_size=(3, 3), activation='relu'))
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(filters=hp.Int('conv_3_filters', min_value=32, max_value=128, step=16), kernel_size=(3, 3), activation='relu'))
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Flatten())
-    model.add(Dense(units=hp.Int('dense_units', min_value=128, max_value=512, step=64), activation='relu'))
-    model.add(Dropout(rate=hp.Float('dropout_rate', min_value=0.2, max_value=0.5, step=0.1)))
-    model.add(Dense(num_classes, activation='softmax'))  # Sprememba v večrazredno klasifikacijo
-    
-    model.compile(optimizer=Adam(learning_rate=hp.Float('learning_rate', min_value=1e-4, max_value=1e-2, sampling='LOG')), 
-                  loss='sparse_categorical_crossentropy',  # Sprememba izgube za večrazredno klasifikacijo
-                  metrics=['accuracy'])
-    return model
+upload_image = load_and_prepare_image(upload_image_path, img_size)
+saved_user_image = load_and_prepare_image(saved_user_image_path, img_size)
 
-# Ustvarjanje mape learned_model, če ne obstaja
-learned_model_dir = 'learned_model'
-if not os.path.exists(learned_model_dir):
-    os.makedirs(learned_model_dir)
+# Pridobitev značilk iz modela
+upload_features = model.predict(upload_image)
+saved_user_features = model.predict(saved_user_image)
 
-# Definicija tunerja
-tuner = kt.RandomSearch(
-    lambda hp: build_model(hp, num_classes),
-    objective='val_accuracy',
-    max_trials=100,  # Povečajmo število poskusov za boljšo optimizacijo
-    executions_per_trial=1,
-    directory=os.path.join(learned_model_dir, 'tuner'),  # Shranjevanje tunerja znotraj learned_model
-    project_name='face_recognition'
-)
+# Izračun cosine podobnosti
+similarity = cosine_similarity(upload_features, saved_user_features)[0][0]
+print(f'Similarity: {similarity}')
 
-# Iskanje najboljših hiperparametrov
-tuner.search(X_train, y_train, epochs=10, validation_data=(X_test, y_test))  # Povečajmo število epoha
-
-# Povzetek iskanja
-best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
-print(f"Best hyperparameters: {best_hps}")
-
-# Učenje modela z najboljšimi hiperparametri
-model = tuner.hypermodel.build(best_hps)
-history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50)  # Povečajmo število epoha
-
-# Shrani model
-model_path = os.path.join(learned_model_dir, 'face_recognition_model.keras')
-model.save(model_path)
-
-# Evalvacija modela
-loss, accuracy = model.evaluate(X_test, y_test)
-print(f'Test Loss: {loss}')
-print(f'Test Accuracy: {accuracy}')
+# Odločanje o identiteti uporabnika
+if similarity >= similarity_threshold:
+    print("user identified")
+else:
+    print("user not identified")
