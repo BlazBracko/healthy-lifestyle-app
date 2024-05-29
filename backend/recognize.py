@@ -12,7 +12,7 @@ model = load_model(model_path)
 img_size = (150, 150)
 
 # Prag podobnosti za prepoznavanje uporabnika (med 0 in 1)
-similarity_threshold = 0.5
+similarity_threshold = 0.9
 
 # Funkcija za nalaganje in pripravo slik
 def load_and_prepare_image(image_path, img_size):
@@ -46,8 +46,15 @@ saved_user_features = model.predict(saved_user_image)
 similarity = cosine_similarity(upload_features, saved_user_features)[0][0]
 print(f'Similarity: {similarity}')
 
+recognized = None  # Spremenljivka za shranjevanje rezultata prepoznavanja
+
 # Odločanje o identiteti uporabnika
 if similarity >= similarity_threshold:
     print("user identified")
+    recognized = True
 else:
     print("user not identified")
+    recognized = False
+
+# Vrnemo rezultat prepoznavanja
+print(recognized)

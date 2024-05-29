@@ -16,11 +16,9 @@ def load_images_and_labels(data_dir):
     images = []
     labels = []
     files = os.listdir(data_dir)
-    # print(f"Datoteke v mapi '{data_dir}': {files}")
     for index, filename in enumerate(files):
         if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
             img_path = os.path.join(data_dir, filename)
-            # print(f"Nalaganje slike: {img_path}")
             try:
                 image = load_img(img_path, target_size=img_size)
                 image = img_to_array(image) / 255.0  # Normalizacija slike
@@ -76,7 +74,7 @@ def build_model(hp, num_classes):
     model.add(Dropout(rate=hp.Float('dropout_rate', min_value=0.2, max_value=0.5, step=0.1)))
     model.add(Dense(num_classes, activation='softmax'))  # Sprememba v večrazredno klasifikacijo
     
-    model.compile(optimizer=Adam(learning_rate=hp.Float('learning_rate', min_value=1e-4, max_value=1e-2, sampling='LOG')), 
+    model.compile(optimizer=Adam(learning_rate=hp.Float('learning_rate', min_value=1e-5, max_value=1e-3, sampling='LOG')), 
                   loss='sparse_categorical_crossentropy',  # Sprememba izgube za večrazredno klasifikacijo
                   metrics=['accuracy'])
     return model
@@ -90,14 +88,14 @@ if not os.path.exists(learned_model_dir):
 tuner = kt.RandomSearch(
     lambda hp: build_model(hp, num_classes),
     objective='val_accuracy',
-    max_trials=100,  # Povečajmo število poskusov za boljšo optimizacijo
+    max_trials=1,  # Povečajmo število poskusov za boljšo optimizacijo
     executions_per_trial=1,
     directory=os.path.join(learned_model_dir, 'tuner'),  # Shranjevanje tunerja znotraj learned_model
     project_name='face_recognition'
 )
 
 # Iskanje najboljših hiperparametrov
-tuner.search(X_train, y_train, epochs=10, validation_data=(X_test, y_test))  # Povečajmo število epoha
+tuner.search(X_train, y_train, epochs=100, validation_data=(X_test, y_test))
 
 # Povzetek iskanja
 best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
@@ -105,7 +103,7 @@ print(f"Best hyperparameters: {best_hps}")
 
 # Učenje modela z najboljšimi hiperparametri
 model = tuner.hypermodel.build(best_hps)
-history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50)  # Povečajmo število epoha
+history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100)  # Povečajmo število epoha
 
 # Shrani model
 model_path = os.path.join(learned_model_dir, 'face_recognition_model.keras')
