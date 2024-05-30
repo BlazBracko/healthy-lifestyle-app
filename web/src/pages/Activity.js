@@ -1,17 +1,19 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../userContext';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 function Activity() {
     const { user } = useContext(UserContext);
+    const { activityId } = useParams();
     const [activity, setActivity] = useState(null);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (user) {
-            axios.get(`http://localhost:3001/activities/6657be53bef1a4347f767136`) //to sm dal kr fiksni activity not, 
+        if (user && activityId) { // Preverite tudi activityId poleg user
+            axios.get(`http://localhost:3001/activities/${activityId}`)
                 .then(response => {
                     setActivity(response.data);
                 })
@@ -20,7 +22,7 @@ function Activity() {
                     console.error('Error fetching the latest activity:', error);
                 });
         }
-    }, [user]);
+    }, [user, activityId]); // Dodajte activityId kot odvisnost za useEffect
 
     if (!user) return <p>Please login to see your activities.</p>;
 

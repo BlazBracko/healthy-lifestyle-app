@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 
-// Pridobi vse uporabnike
-router.get('/', userController.getAllUsers);
-
 // Pridobi uporabnika po ID
 router.get('/:id', userController.getUserById);
+
+// Pridobi vse uporabnike
+router.get('/', userController.getAllUsers);
 
 // Dodaj novega uporabnika
 router.post('/register', userController.createUser);

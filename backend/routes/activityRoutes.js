@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const activityController = require('../controllers/activityController'); // Prilagodite pot, če je potrebno
 
+
+// Pridobi aktivnosti uporabnika
+router.get('/:userId', activityController.getUserActivities);
+
 // Pridobi vse aktivnosti
 router.get('/', activityController.getAllActivities);
 

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { UserContext } from "../userContext";
-import './Profile.css';  // Assuming the CSS file is in the same folder
+import './Profile.css'; 
 
 function Profile() {
     const { user } = useContext(UserContext);
@@ -20,11 +20,25 @@ function Profile() {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://localhost:3001/users/664db607c84fefbc8cce789a`) //treba naredit iz user contexta
-                .then(response => setProfile(response.data))
+            axios.get(`http://localhost:3001/users/${user.id}`)
+                .then(response => {
+                    const fetchedProfile = response.data;
+                    setProfile({
+                        name: fetchedProfile.name || '',
+                        surname: fetchedProfile.surname || '',
+                        username: fetchedProfile.username || '',
+                        email: fetchedProfile.email || '',
+                        age: fetchedProfile.age || '',
+                        height: fetchedProfile.height || '',
+                        weight: fetchedProfile.weight || '',
+                        gender: fetchedProfile.gender || ''
+                    });
+                })
                 .catch(error => setErrors('Failed to fetch profile'));
         }
     }, [user]);
+
+    if(!user)  return <p>Please login.</p>;
 
     const handleChange = (e) => {
         setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -34,9 +48,9 @@ function Profile() {
         
         e.preventDefault();
         try {
-            const res = await axios.put(`http://localhost:3001/users/664db607c84fefbc8cce789a`, profile);
+            const res = await axios.put(`http://localhost:3001/users/${user.id}`, profile);
             alert('Profile updated successfully!');
-            console.log(res.data); // Optionally use response data
+            console.log(res.data);
 
         } catch (error) {
             setErrors('Failed to update profile');

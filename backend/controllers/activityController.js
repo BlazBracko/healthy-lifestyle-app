@@ -11,6 +11,24 @@ exports.getAllActivities = async (req, res) => {
     }
 };
 
+// Pridobi aktivnosti uporabnika
+exports.getUserActivities = async (req, res) => {
+    try {
+        // Pridobi userId iz params
+        const userId = req.params.userId;
+        let activities;
+        if (userId) {
+            // Filtrira aktivnosti po userId
+            activities = await Activity.find({ userId: userId });
+        } else {
+            return res.status(400).json({ message: "No userId provided" });
+        }
+        res.status(200).json(activities);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // Pridobi aktivnost po ID
 exports.getActivityById = async (req, res) => {
     try {
