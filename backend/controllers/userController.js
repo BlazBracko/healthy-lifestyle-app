@@ -89,7 +89,7 @@ exports.sendNotification = async (req, res) => {
             sound: 'default',
             title: 'New Notification',
             body: 'This is a test notification',
-            data: { url: 'yourapp://faceid' }, // Include the deep link URL
+            data: { url: 'myapp://faceid' }, // Include the deep link URL
         };
 
         // Send the notification through Expo's push API

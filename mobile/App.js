@@ -2,9 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import BiometricsCapture from './app/screens/BiometricsCapture';
 import HomeScreen from './app/screens/HomeScreen'; 
 import FaceIdScreen from './app/screens/FaceIdScreen'; 
+import ActivityScreen from './app/screens/Activity'; 
+import ActivityTrackingScreen from './app/screens/ActivityTracking'; 
 import RegisterScreen from './app/screens/RegisterScreen';
 import { UserProvider } from './src/context/UserContext'; 
 import * as Linking from 'expo-linking';
@@ -12,14 +13,14 @@ import * as Linking from 'expo-linking';
 const Stack = createNativeStackNavigator();
 
 const linking = {
-  prefixes: ['exp://', 'yourapp://'],
+  prefixes: ['exp://', 'myapp://'],
   config: {
     screens: {
       Home: 'home',
-      FaceID: 'faceid',
-      BiometricsCapture: 'biometricscapture',
+      FaceId: 'faceid',
       Login: 'login',
-      Register: 'register'
+      Register: 'register',
+      Activity: 'activity'
     },
   },
 };
@@ -48,15 +49,15 @@ export default function App() {
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       // Handle notification received while the app is foregrounded
       console.log('Notification received:', notification);
+      console.log('Notification data:', notification.request.content.data);
+
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.warn("delojepacdelo");
       const { data } = response.notification.request.content;
-      // Navigate to the screen specified in the notification data
-      if (data && data.url) {
-        Linking.openURL(data.url);
-      } else if (data && data.withSome === 'data') {
-        navigationRef.current?.navigate('BiometricsCapture');
+      if (data.url) {
+          Linking.openURL(data.url); // This will trigger the navigation based on your linking config
       }
     });
 
@@ -78,6 +79,8 @@ export default function App() {
           <Stack.Screen name="FaceId" component={FaceIdScreen}  options={{ title: 'FaceId' }}/>
           <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
           <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Register' }} />
+          <Stack.Screen name="Activity" component={ActivityScreen} options={{ title: 'Activity' }} />
+          <Stack.Screen name="ActivityTracking" component={ActivityTrackingScreen} options={{ title: 'ActivityTracking' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </UserProvider>
