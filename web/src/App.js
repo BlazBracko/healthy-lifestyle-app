@@ -5,7 +5,10 @@ import Register from "./pages/Register";
 import Header from "./components/Header";
 import Notif from "./components/sendNotification";
 import Weather from './components/Weather';
-import Logout from './components/Logout'
+import Logout from './components/Logout';
+import Activity from './pages/Activity';
+import Profile from './pages/Profile';
+
 import Home from './pages/Home';
 
 function App() {
@@ -18,6 +21,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/activity" element={<Activity />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/register" element={<Register />} />
           <Route path="/scrape-weather" element={<Weather />} />
           <Route path="/logout" element={<Logout />} />

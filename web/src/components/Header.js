@@ -14,7 +14,7 @@ function Header(props) {
                         {context => (
                             context.user ?
                                 <>
-                                    <li className="nav-item"><Link to='/publish' className="nav-link">Publish</Link></li>
+                                    <li className="nav-item"><Link to='/activity' className="nav-link">Activity</Link></li>
                                     <li className="nav-item"><Link to='/profile' className="nav-link">Profile</Link></li>
                                     <li className="nav-item"><Link to='/logout' className="nav-link">Logout</Link></li>
                                 </>

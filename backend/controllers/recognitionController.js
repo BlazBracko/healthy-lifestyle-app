@@ -32,31 +32,47 @@ const processVideo = (req, res) => {
   const videoPath = req.file.path;
   console.log('Video path:', videoPath);
 
-  // Example: Integrate Python processing or any other logic
-  const scriptPath = path.join(__dirname, '../dataSet.py');
-  console.log('Script path:', scriptPath);
-
-  const options = {
+  // Path and options for dataSet.py
+  const dataSetScriptPath = path.join(__dirname, '../dataSet.py');
+  const dataSetOptions = {
     mode: 'text',
     pythonOptions: ['-u'],
-    scriptPath: path.dirname(scriptPath),
+    scriptPath: path.dirname(dataSetScriptPath),
     args: [videoPath]
   };
 
-  PythonShell.run('dataSet.py', options, (err, results) => {
+  // Running dataSet.py
+  PythonShell.run('dataSet.py', dataSetOptions, (err, results) => {
     if (err) {
       console.error('Error running Python script:', err);
       return res.status(500).json({ error: 'Error running Python script.' });
     }
 
-    console.log('Python script finished');
-    try {
-      const result = JSON.parse(results[0]);
-      res.json(result);
-    } catch (parseError) {
-      console.error('Error parsing result:', parseError);
-      res.status(500).json({ error: 'Error parsing result.' });
-    }
+    console.log('dataSet.py script finished');
+    // Path and options for learn.py
+    const learnScriptPath = path.join(__dirname, '../learn.py');
+    const learnOptions = {
+      mode: 'text',
+      pythonOptions: ['-u'],
+      scriptPath: path.dirname(learnScriptPath),
+      args: [] // Add arguments if needed
+    };
+    
+    // Running learn.py
+    PythonShell.run('learn.py', learnOptions, (learnErr, learnResults) => {
+      if (learnErr) {
+        console.error('Error running learn.py script:', learnErr);
+        return res.status(500).json({ error: 'Error running learn.py script.' });
+      }
+      console.log('learn.py script finished');
+      try {
+        const learnResult = JSON.parse(learnResults[0]);
+        res.json({dataSetResult: JSON.parse(results[0]), learnResult: learnResult});
+      } catch (parseError) {
+        console.error('Error parsing result:', parseError);
+        res.status(500).json({ error: 'Error parsing result.' });
+      }
+    });
   });
 };
 

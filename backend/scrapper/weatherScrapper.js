@@ -45,6 +45,8 @@ const scrapeWeather = async () => {
     await newWeather.save({ timeoutMS: 10000 });
     
     console.log('Weather data inserted into database successfully');
+
+    return newWeather;
   } catch (error) {
     console.error('Failed to scrape weather data:', error.message);
   }
