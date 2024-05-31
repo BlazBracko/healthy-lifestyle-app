@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
 import { useNavigation } from '@react-navigation/native';
+import { UserContext } from '../context/userContext';
 
 const Activity = () => {
+    const { user } = useContext(UserContext);
     const [selectedValue, setSelectedValue] = useState(null);
     const navigation = useNavigation();
 
@@ -21,13 +23,13 @@ const Activity = () => {
     const handleStartActivity = async () => {
         if (selectedValue) {
             const startTime = new Date(); // Capture the current time
-            const response = await fetch("http://192.168.1.220:3001/activities", {
+            const response = await fetch("http://192.168.1.85:3001/activities", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userID: '664db607c84fefbc8cce789a',
+                    userID: user.id,
                     type: selectedValue,
                     startTime: startTime.toISOString(),
                 }),
@@ -84,6 +86,7 @@ const styles = StyleSheet.create({
         borderColor: '#ccc',
         borderWidth: 1,
         color: 'black',
+        alignSelf: 'center'
     },
     label: {
         fontSize: 16,

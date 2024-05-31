@@ -7,6 +7,7 @@ import FaceIdScreen from './app/screens/FaceIdScreen';
 import ActivityScreen from './app/screens/Activity'; 
 import ActivityTrackingScreen from './app/screens/ActivityTracking'; 
 import RegisterScreen from './app/screens/RegisterScreen';
+import ShowActivity from './app/screens/ShowActivity';
 import { UserProvider } from './src/context/UserContext'; 
 import * as Linking from 'expo-linking';
 
@@ -81,6 +82,7 @@ export default function App() {
           <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Register' }} />
           <Stack.Screen name="Activity" component={ActivityScreen} options={{ title: 'Activity' }} />
           <Stack.Screen name="ActivityTracking" component={ActivityTrackingScreen} options={{ title: 'ActivityTracking' }} />
+          <Stack.Screen name="ShowActivity" component={ShowActivity} options={{ title: 'ShowActivity' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </UserProvider>

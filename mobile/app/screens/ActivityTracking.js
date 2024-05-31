@@ -10,7 +10,7 @@ const ActivityTracking = ({ route }) => {
 
     useEffect(() => {
         const sendLocationData = async (latitude, longitude, altitude) => {
-            await fetch("http://192.168.1.220:3001/activities/update", {
+            await fetch("http://192.168.1.85:3001/activities/update", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -50,9 +50,10 @@ const ActivityTracking = ({ route }) => {
 
     const handleEndActivity = async () => {
         const endTime = new Date();
-        await fetch("http://192.168.1.220:3001/activities/end", {
+        await fetch("http://192.168.1.85:3001/activities/end", {
             method: 'POST',
             headers: {
+
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -60,7 +61,7 @@ const ActivityTracking = ({ route }) => {
                 endTime: endTime.toISOString(),
             }),
         });
-        navigation.navigate("Home"); // Change "Home" to your specific home or summary screen
+        navigation.navigate("Home"); 
     };
 
     return (

@@ -4,13 +4,13 @@ const activityController = require('../controllers/activityController'); // Pril
 
 
 // Pridobi aktivnosti uporabnika
-router.get('/:userId', activityController.getUserActivities);
-
-// Pridobi vse aktivnosti
-router.get('/', activityController.getAllActivities);
+router.get('/user/:userId', activityController.getUserActivities);
 
 // Pridobi aktivnost po ID
 router.get('/:id', activityController.getActivityById);
+
+// Pridobi vse aktivnosti
+router.get('/', activityController.getAllActivities);
 
 // Dodaj novo aktivnost
 router.post('/', activityController.createActivity);

@@ -19,7 +19,7 @@ exports.getUserActivities = async (req, res) => {
         let activities;
         if (userId) {
             // Filtrira aktivnosti po userId
-            activities = await Activity.find({ userId: userId });
+            activities = await Activity.find({ userID: userId });
         } else {
             return res.status(400).json({ message: "No userId provided" });
         }
@@ -41,12 +41,8 @@ exports.getActivityById = async (req, res) => {
 };
 
 // Dodaj novo aktivnost
-// Add new activity
 exports.createActivity = async (req, res) => {
     const { userID, type, startTime } = req.body;
-    console.log(userID, " user id");
-    console.log(type, " type");
-    console.log(startTime, " starttime");
     // Create a new Activity document only with userID, type, and startTime
     
     //const weatherData = await scrapeWeather();

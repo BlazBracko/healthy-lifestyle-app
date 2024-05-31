@@ -10,7 +10,7 @@ function MyActivities() {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://localhost:3001/activities/${user._id}`)
+            axios.get(`http://localhost:3001/activities/user/${user.id}`)
                 .then(response => {
                     setActivities(response.data);
                 })

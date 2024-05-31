@@ -39,12 +39,16 @@ function Activity() {
                     <p>Steps Count: {activity.stepCount}</p>
                     
                     {/* Map Container */}
-                    <MapContainer center={[activity.locationData[0].latitude, activity.locationData[0].longitude]} zoom={13} style={{ height: 400, width: "100%" }}>
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <Polyline pathOptions={{ color: 'blue' }} positions={activity.locationData.map(loc => [loc.latitude, loc.longitude])} />
-                    </MapContainer>
+                    {activity.locationData && activity.locationData.length > 0 ? (
+                        <MapContainer center={[activity.locationData[0].latitude, activity.locationData[0].longitude]} zoom={13} style={{ height: 400, width: "100%" }}>
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <Polyline pathOptions={{ color: 'blue' }} positions={activity.locationData.map(loc => [loc.latitude, loc.longitude])} />
+                        </MapContainer>
+                    ) : (
+                        <p>No location data available.</p>
+                    )}
                 </div>
             ) : <p>{error || 'No activities found.'}</p>}
         </div>

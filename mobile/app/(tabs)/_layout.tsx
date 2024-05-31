@@ -8,6 +8,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import FaceIdScreen from '../screens/FaceIdScreen';
 import ActivityScreen from '../screens/Activity';
 import ActivityTrackingScreen from '../screens/ActivityTracking';
+import ShowActivity from '../screens/ShowActivity';
 
 
 const Tab = createBottomTabNavigator();
@@ -21,9 +22,10 @@ export default function Tabs() {
         <>
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
-        <Tab.Screen name="Activity" component={ActivityScreen} />
+        <Tab.Screen name="New Activity" component={ActivityScreen} />
         <Tab.Screen name="ActivityTracking" component={ActivityTrackingScreen} options={{ tabBarButton: () => null }} /> 
         <Tab.Screen name="FaceId" component={FaceIdScreen} options={{ tabBarButton: () => null }} /> 
+        <Tab.Screen name="ShowActivity" component={ShowActivity} options={{ tabBarButton: () => null }} /> 
         </>
 
       ) : (
