@@ -23,7 +23,7 @@ const Activity = () => {
     const handleStartActivity = async () => {
         if (selectedValue) {
             const startTime = new Date(); // Capture the current time
-            const response = await fetch("http://192.168.1.85:3001/activities", {
+            const response = await fetch("http://192.168.1.100:3001/activities", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

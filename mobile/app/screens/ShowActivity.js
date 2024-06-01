@@ -14,7 +14,7 @@ const ActivityScreen = () => {
 
     useEffect(() => {
         if (user && activityId) {
-            axios.get(`http://192.168.1.85:3001/activities/${activityId}`)
+            axios.get(`http://192.168.1.100:3001/activities/${activityId}`)
                 .then(response => {
                     console.log('Activity data:', response.data); 
                     setActivity(response.data);
@@ -36,7 +36,7 @@ const ActivityScreen = () => {
                     <Text style={styles.info}>Type: {activity.type}</Text>
                     <Text style={styles.info}>Start Time: {new Date(activity.startTime).toLocaleString()}</Text>
                     <Text style={styles.info}>End Time: {new Date(activity.endTime).toLocaleString()}</Text>
-                    <Text style={styles.info}>Distance: {activity.distance} km</Text>
+                    <Text style={styles.info}>Distance: {activity.distance} m</Text>
                     <Text style={styles.info}>Calories Burned: {activity.caloriesBurned}</Text>
                     <Text style={styles.info}>Steps Count: {activity.stepCount}</Text>
 

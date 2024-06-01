@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { UserContext } from '../context/userContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const HomeScreen = () => {
     const [activities, setActivities] = useState([]);
@@ -10,9 +10,9 @@ const HomeScreen = () => {
     const { user } = useContext(UserContext);
     const navigation = useNavigation();
 
-    useEffect(() => {
+    const fetchActivities = useCallback(() => {
         if (user) {
-            axios.get(`http://192.168.1.85:3001/activities/user/${user.id}`)
+            axios.get(`http://192.168.1.100:3001/activities/user/${user.id}`)
                 .then(response => {
                     setActivities(response.data);
                 })
@@ -22,6 +22,12 @@ const HomeScreen = () => {
                 });
         }
     }, [user]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchActivities();
+        }, [fetchActivities])
+    );
 
     if (!user) return <Text>Please login to view your activities.</Text>;
 

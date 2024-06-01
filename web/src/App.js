@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Header from "./components/Header";
-import Notif from "./components/sendNotification";
 import Weather from './components/Weather';
 import Logout from './components/Logout';
 import Activity from './pages/Activity';
@@ -16,9 +15,7 @@ function App() {
   return (
     <Router>
       <Header title="Healthy Lifestyle App" />
-      <div className="App" style={{ marginTop: '60px' }}>
-        <Weather></Weather>
-        <Notif></Notif>
+      <div className="App" style={{ marginTop: '110px' }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

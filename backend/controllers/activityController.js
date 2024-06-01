@@ -96,7 +96,7 @@ exports.updateActivityData = async (req, res) => {
 
 // Function to end an activity and update the end time
 exports.endActivity = async (req, res) => {
-    const { activityId, endTime } = req.body;
+    const { activityId, endTime, stepCount } = req.body;
 
     try {
         // Fetch the complete activity including its location data
@@ -127,6 +127,7 @@ exports.endActivity = async (req, res) => {
         activity.endTime = new Date(endTime);
         activity.distance = totalDistance * 1000;
         activity.weatherConditions = weatherData._id;
+        activity.stepCount = stepCount;
         
         const updatedActivity = await activity.save();
 

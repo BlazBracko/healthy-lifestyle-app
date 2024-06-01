@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { UserContext } from '../userContext';
 import axios from 'axios';
+import './MyActivities.css'; // Importirajte CSS datoteko za slog
 
 function MyActivities() {
     const { user } = useContext(UserContext);
@@ -24,13 +25,13 @@ function MyActivities() {
     if (!user) return <p>Please login to view your activities.</p>;
 
     return (
-        <div>
+        <div className="activities-container">
             <h1>Your Activities</h1>
             {activities.length > 0 ? (
-                <ul>
+                <ul className="activities-list">
                     {activities.map(activity => (
-                        <li key={activity._id}>
-                            <Link to={`/activity/${activity._id}`}>
+                        <li key={activity._id} className="activity-item">
+                            <Link to={`/activity/${activity._id}`} className="activity-link">
                                 {activity.type} on {new Date(activity.startTime).toLocaleDateString()}
                             </Link>
                         </li>
