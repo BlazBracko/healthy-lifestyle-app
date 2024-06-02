@@ -36,7 +36,7 @@ const ActivityScreen = () => {
                     <Text style={styles.info}>Type: {activity.type}</Text>
                     <Text style={styles.info}>Start Time: {new Date(activity.startTime).toLocaleString()}</Text>
                     <Text style={styles.info}>End Time: {new Date(activity.endTime).toLocaleString()}</Text>
-                    <Text style={styles.info}>Distance: {activity.distance} m</Text>
+                    <Text style={styles.info}>Distance: {activity.distance.toFixed(2)} km</Text>
                     <Text style={styles.info}>Calories Burned: {activity.caloriesBurned}</Text>
                     <Text style={styles.info}>Steps Count: {activity.stepCount}</Text>
 

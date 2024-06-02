@@ -38,7 +38,7 @@ const Activity = () => {
             const data = await response.json();
             if (response.ok) {
                 navigation.navigate("ActivityTracking", {
-                    type: selectedValue,
+                    activityType: selectedValue,
                     startTime: startTime.toISOString(),
                     activityId: data.activityId, // Assuming the server responds with an ID for the activity
                 });

@@ -35,7 +35,7 @@ function Activity() {
                     <p className="activity-info">Type: {activity.type}</p>
                     <p className="activity-info">Start Time: {new Date(activity.startTime).toLocaleString()}</p>
                     <p className="activity-info">End Time: {new Date(activity.endTime).toLocaleString()}</p>
-                    <p className="activity-info">Distance: {activity.distance} km</p>
+                    <p className="activity-info">Distance: {activity.distance.toFixed(2)} km</p>
                     <p className="activity-info">Calories Burned: {activity.caloriesBurned}</p>
                     <p className="activity-info">Steps Count: {activity.stepCount}</p>
                     

@@ -8,6 +8,7 @@ const ActivityTracking = ({ route }) => {
     const { activityType, startTime, activityId } = route.params;
     const [position, setPosition] = useState(null);
     const [stepCount, setStepCount] = useState(0);
+    const [caloriesBurned, setCaloriesBurned] = useState(0);
     const navigation = useNavigation();
 
     useEffect(() => {
@@ -46,15 +47,17 @@ const ActivityTracking = ({ route }) => {
         })();
 
         const startPedometer = async () => {
-            const isAvailable = await Pedometer.isAvailableAsync();
-            if (!isAvailable) {
-                console.warn('Pedometer is not available on this device.');
-                return;
-            }
+            if (activityType === 'walk' || activityType === 'run') { // samo za tek in hojo 
+                const isAvailable = await Pedometer.isAvailableAsync();
+                if (!isAvailable) {
+                    console.warn('Pedometer is not available on this device.');
+                    return;
+                }
 
-            Pedometer.watchStepCount(result => {
-                setStepCount(result.steps);
-            });
+                Pedometer.watchStepCount(result => {
+                    setStepCount(result.steps);
+                });
+            }
         };
 
         startPedometer();
@@ -62,7 +65,27 @@ const ActivityTracking = ({ route }) => {
         return () => {
             locationSubscriber && locationSubscriber.remove();
         };
-    }, []);
+
+    }, [activityType]);
+
+    useEffect(() => {
+        const calculateCaloriesBurned = () => {
+            let calories = 0;
+            if (activityType === 'walk') {
+                calories = stepCount * 0.04; // Primer izračuna za hojo
+            } else if (activityType === 'run') {
+                calories = stepCount * 0.06; // Primer izračuna za tek
+            } else if (activityType === 'cycle') {
+                // Izračun kalorij za kolesarjenje (potrebna je druga logika)
+                // Primer: 8 kalorij na minuto kolesarjenja
+                const durationInMinutes = (new Date() - new Date(startTime)) / (1000 * 60);
+                calories = durationInMinutes * 8;
+            }
+            setCaloriesBurned(Math.round(calories));
+        };
+
+        calculateCaloriesBurned();
+    }, [stepCount, activityType, startTime]);
 
     const handleEndActivity = async () => {
         const endTime = new Date();
@@ -74,10 +97,11 @@ const ActivityTracking = ({ route }) => {
             body: JSON.stringify({
                 activityId,
                 endTime: endTime.toISOString(),
-                stepCount, 
+                stepCount,
+                caloriesBurned, 
             }),
         });
-        navigation.navigate("Home"); 
+        navigation.navigate("Home");
     };
 
     return (
@@ -92,6 +116,7 @@ const ActivityTracking = ({ route }) => {
                 </>
             )}
             <Text>Steps: {stepCount}</Text>
+            <Text>Calories burned: {caloriesBurned}</Text>
             <Button title="End Activity" onPress={handleEndActivity} />
         </View>
     );

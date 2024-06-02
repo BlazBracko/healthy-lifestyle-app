@@ -6,9 +6,9 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ProfileScreen from '../screens/ProfileScreen'; 
 import FaceIdScreen from '../screens/FaceIdScreen';
-import ActivityScreen from '../screens/Activity';
-import ActivityTrackingScreen from '../screens/ActivityTracking';
-import ShowActivity from '../screens/ShowActivity';
+import ActivityScreen from '../screens/ActivityScreen';
+import ActivityTrackingScreen from '../screens/ActivityTrackingScreen';
+import ShowActivity from '../screens/ShowActivityScreen';
 
 
 const Tab = createBottomTabNavigator();

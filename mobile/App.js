@@ -4,10 +4,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './app/screens/HomeScreen'; 
 import FaceIdScreen from './app/screens/FaceIdScreen'; 
-import ActivityScreen from './app/screens/Activity'; 
-import ActivityTrackingScreen from './app/screens/ActivityTracking'; 
+import ActivityScreen from './app/screens/ActivityScreen'; 
+import ActivityTrackingScreen from './app/screens/ActivityTrackingScreen'; 
 import RegisterScreen from './app/screens/RegisterScreen';
-import ShowActivity from './app/screens/ShowActivity';
+import ShowActivity from './app/screens/ShowActivityScreen';
 import { UserProvider } from './src/context/UserContext'; 
 import * as Linking from 'expo-linking';
 

@@ -27,13 +27,12 @@
 }
 
 .activity-item:hover {
-    background-color: #f0f0f0;
+    background-color: #f2f7fc;
 }
 
 .activity-link {
     text-decoration: none;
-    color: rgb(52, 94, 184);
-    font-weight: bold;
+    color: rgb(0, 0, 0);
 }
 
 .activity-link:hover {
