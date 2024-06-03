@@ -14,35 +14,55 @@ const ActivityScreen = () => {
 
     useEffect(() => {
         if (user && activityId) {
-            axios.get(`http://192.168.1.100:3001/activities/${activityId}`)
+            axios.get(`http://172.20.10.5:3001/activities/${activityId}`)
                 .then(response => {
                     console.log('Activity data:', response.data); 
                     setActivity(response.data);
                 })
                 .catch(error => {
-                    setError('Failed to fetch the latest activity');
-                    console.error('Error fetching the latest activity:', error);
+                    setError('Failed to fetch the activity');
+                    console.error('Error fetching the activity:', error);
                 });
         }
     }, [user, activityId]);
 
-    if (!user) return <Text>Please login to see your activities.</Text>;
+    if (!user) return <Text style={styles.errorText}>Please login to see your activities.</Text>;
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Latest Activity</Text>
+            <Text style={styles.title}>Activity Details</Text>
             {activity ? (
-                <View>
-                    <Text style={styles.info}>Type: {activity.type}</Text>
-                    <Text style={styles.info}>Start Time: {new Date(activity.startTime).toLocaleString()}</Text>
-                    <Text style={styles.info}>End Time: {new Date(activity.endTime).toLocaleString()}</Text>
-                    <Text style={styles.info}>Distance: {activity.distance.toFixed(2)} km</Text>
-                    <Text style={styles.info}>Calories Burned: {activity.caloriesBurned}</Text>
-                    <Text style={styles.info}>Steps Count: {activity.stepCount}</Text>
+                <View style={styles.detailsContainer}>
+                    <View style={styles.infoContainer}>
+                        <View style={styles.infoItem}>
+                            <Text style={styles.infoLabel}>Type</Text>
+                            <Text style={styles.infoValue}>{activity.type}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <Text style={styles.infoLabel}>Start Time</Text>
+                            <Text style={styles.infoValue}>{new Date(activity.startTime).toLocaleString()}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <Text style={styles.infoLabel}>End Time</Text>
+                            <Text style={styles.infoValue}>{new Date(activity.endTime).toLocaleString()}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <Text style={styles.infoLabel}>Distance</Text>
+                            <Text style={styles.infoValue}>{activity.distance ? activity.distance.toFixed(3) : 'N/A'} km</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <Text style={styles.infoLabel}>Calories Burned</Text>
+                            <Text style={styles.infoValue}>{activity.caloriesBurned}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <Text style={styles.infoLabel}>Steps Count</Text>
+                            <Text style={styles.infoValue}>{activity.stepCount}</Text>
+                        </View>
+                    </View>
 
                     {/* Map Container */}
                     {activity.locationData && activity.locationData.length > 0 ? (
-                        <MapView // zemljevida ne prikaže
+                        <MapView
                             style={styles.map}
                             initialRegion={{
                                 latitude: activity.locationData[0].latitude,
@@ -56,8 +76,8 @@ const ActivityScreen = () => {
                                     latitude: loc.latitude,
                                     longitude: loc.longitude
                                 }))}
-                                strokeColor="#000" 
-                                strokeWidth={3}
+                                strokeColor="#4A90E2" 
+                                strokeWidth={4}
                             />
                             {activity.locationData.map((loc, index) => (
                                 <Marker
@@ -68,10 +88,10 @@ const ActivityScreen = () => {
                             ))}
                         </MapView>
                     ) : (
-                        <Text>No location data available.</Text>
+                        <Text style={styles.noDataText}>No location data available.</Text>
                     )}
                 </View>
-            ) : <Text>{error || 'No activities found.'}</Text>}
+            ) : <Text style={styles.errorText}>{error || 'No activities found.'}</Text>}
         </ScrollView>
     );
 };
@@ -79,24 +99,60 @@ const ActivityScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'white',
+        backgroundColor: '#F5F5F5',
         padding: 20,
     },
     title: {
-        fontSize: 20,
+        fontSize: 24,
+        fontWeight: 'bold',
         marginBottom: 20,
-        color: 'black',
+        textAlign: 'center',
+        color: '#333',
     },
-    info: {
+    detailsContainer: {
+        backgroundColor: '#FFF',
+        borderRadius: 10,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    infoContainer: {
+        marginBottom: 20,
+    },
+    infoItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEE',
+    },
+    infoLabel: {
         fontSize: 16,
-        marginBottom: 10,
-        color: 'black',
+        color: '#666',
+    },
+    infoValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    errorText: {
+        fontSize: 16,
+        color: 'red',
+        textAlign: 'center',
+    },
+    noDataText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginTop: 20,
     },
     map: {
         width: '100%',
         height: 400,
+        borderRadius: 10,
         marginTop: 20,
     },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
 import { useNavigation } from '@react-navigation/native';
 import { UserContext } from '../context/userContext';
@@ -7,23 +7,27 @@ import { UserContext } from '../context/userContext';
 const Activity = () => {
     const { user } = useContext(UserContext);
     const [selectedValue, setSelectedValue] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation();
 
     const placeholder = {
         label: 'Select a workout type...',
         value: null,
+        color: '#6e6869',
     };
 
     const options = [
-        { label: 'Run', value: 'run' },
-        { label: 'Walk', value: 'walk' },
-        { label: 'Cycle', value: 'cycle' },
+        { label: 'Run', value: 'Run' },
+        { label: 'Walk', value: 'Walk' },
+        { label: 'Cycle', value: 'Cycle' },
+        { label: 'Hike', value: 'Hike' },
     ];
 
     const handleStartActivity = async () => {
         if (selectedValue) {
-            const startTime = new Date(); // Capture the current time
-            const response = await fetch("http://192.168.1.100:3001/activities", {
+            setIsLoading(true);
+            const startTime = new Date();
+            const response = await fetch("http://172.20.10.5:3001/activities", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,13 +38,14 @@ const Activity = () => {
                     startTime: startTime.toISOString(),
                 }),
             });
-    
+
             const data = await response.json();
+            setIsLoading(false);
             if (response.ok) {
                 navigation.navigate("ActivityTracking", {
                     activityType: selectedValue,
                     startTime: startTime.toISOString(),
-                    activityId: data.activityId, // Assuming the server responds with an ID for the activity
+                    activityId: data.activityId,
                 });
             } else {
                 console.error('Failed to start activity', data);
@@ -59,14 +64,16 @@ const Activity = () => {
                 style={{
                     inputIOS: styles.picker,
                     inputAndroid: styles.picker,
-                    placeholder: {
-                        color: 'gray',
-                    },
+                    placeholder: styles.placeholder,
                 }}
+                useNativeAndroidPickerStyle={false} // Ensures consistent look on Android
             />
-            {selectedValue && <Text style={styles.label}>Selected: {selectedValue}</Text>}
-            <TouchableOpacity style={styles.button} onPress={handleStartActivity}>
-                <Text style={styles.buttonText}>Start Activity</Text>
+            <TouchableOpacity style={styles.button} onPress={handleStartActivity} disabled={isLoading}>
+                {isLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                    <Text style={styles.buttonText}>Start Activity</Text>
+                )}
             </TouchableOpacity>
         </View>
     );
@@ -78,28 +85,39 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
+        backgroundColor: '#EDEDEF', // A modern, light grey background
     },
     picker: {
         width: 300,
         padding: 10,
-        backgroundColor: '#fff',
-        borderColor: '#ccc',
+        backgroundColor: '#FFFFFF', // White background for the picker for a clean look
+        borderColor: '#E2E2E2', // Light border color
         borderWidth: 1,
+        borderRadius: 4,
         color: 'black',
-        alignSelf: 'center'
+        alignSelf: 'center',
+        marginBottom: 20,
+    },
+    placeholder: {
+        color: '#6e6869',
     },
     label: {
-        fontSize: 16,
+        fontSize: 18,
         marginBottom: 10,
-        color: 'black',
+        color: '#333',
+        fontWeight: 'bold',
     },
     button: {
-        backgroundColor: 'blue',
-        padding: 10,
+        backgroundColor: '#007AFF',
+        padding: 12,
         borderRadius: 5,
         marginTop: 20,
         alignItems: 'center',
         width: 150,
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        shadowColor: '#000',
+        shadowOffset: { height: 2, width: 0 },
     },
     buttonText: {
         color: 'white',
