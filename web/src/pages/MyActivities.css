@@ -1,40 +1,76 @@
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .activities-container {
-    padding: 20px;
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: #e8eefa;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding-top: 10px;
+    width: 40%;
+     /* Dodatna senca za boljši izgled */
+    border-radius: 10px;
+    
 }
 
-.activities-container h1 {
-    color: rgb(52, 94, 184);
-    margin-bottom: 20px;
+.activities-container p{
+    color: #2d53bd;
+    margin-left: 20px;
 }
-
 .activities-list {
-    list-style-type: none;
+    list-style: none;
     padding: 0;
 }
 
 .activity-item {
-    margin: 10px 0;
-    padding: 10px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    transition: background-color 0.3s;
+    padding: 20px;
+    margin-top: 20px;
+    background-color: #f8faff;
+    border-radius: 20px;
 }
 
-.activity-item:hover {
-    background-color: #f2f7fc;
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.activity-header strong {
+    font-size: 1.8em;
+}
+
+.activity-date {
+    color: #888;
+}
+
+.activity-details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.activity-detail {
+    flex: 1;
+    text-align: center;
+}
+
+.activity-detail small {
+    display: block;
+    color: #666;
+}
+
+.activity-detail strong {
+    display: block;
+    font-size: 1.1em;
+}
+
+.map-container {
+    height: 200px;
+    margin-top: 10px;
 }
 
 .activity-link {
     text-decoration: none;
-    color: rgb(0, 0, 0);
-}
-
-.activity-link:hover {
-    color: rgb(16, 45, 108);
+    color: inherit;
+    display: block;
 }
