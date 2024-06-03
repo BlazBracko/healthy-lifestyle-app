@@ -177,7 +177,9 @@ exports.updateActivity = async (req, res) => {
 // Izbriši aktivnost
 exports.deleteActivity = async (req, res) => {
     try {
-        const activity = await Activity.findById(req.params.id);
+        const { id } = req.params; // Extract the activityId from the URL parameters
+
+        const activity = await Activity.findById(id);
         if (!activity) return res.status(404).json({ message: 'Activity not found' });
 
         await activity.remove();
