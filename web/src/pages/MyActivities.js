@@ -4,7 +4,7 @@ import { UserContext } from '../userContext';
 import axios from 'axios';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import './MyActivities.css'; 
+import './ActivitiesList.css'; // Importirajte CSS datoteko za slog
 
 function MyActivities() {
     const { user } = useContext(UserContext);
@@ -51,7 +51,6 @@ function MyActivities() {
                                     <strong>{activity.type}</strong>
                                     <span className="activity-date">{new Date(activity.startTime).toLocaleDateString()}</span>
                                 </div>
-                                {activity.type === 'walk' && (
                                     <div className="activity-details">
                                         <div className="activity-detail">
                                             <small>Distance</small>
@@ -66,7 +65,6 @@ function MyActivities() {
                                             <strong>{calculateDuration(activity.startTime, activity.endTime)}</strong>
                                         </div>
                                     </div>
-                                )}
                                 </Link>
                                 {/* Map Container */}
                                 {activity.locationData && activity.locationData.length > 0 && (

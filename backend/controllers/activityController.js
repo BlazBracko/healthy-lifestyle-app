@@ -4,7 +4,7 @@ const { scrapeWeather } = require('../scrapper/weatherScrapper'); // Ensure this
 // Pridobi vse aktivnosti
 exports.getAllActivities = async (req, res) => {
     try {
-        const activities = await Activity.find();
+        const activities = await Activity.find().populate('userID', 'name surname');
         res.status(200).json(activities);
     } catch (err) {
         res.status(500).json({ message: err.message });
