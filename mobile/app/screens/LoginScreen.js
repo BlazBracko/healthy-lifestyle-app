@@ -12,7 +12,7 @@ const Login = () => {
 
     const handleLogin = async () => {
         try {
-            const res = await fetch("http://192.168.1.220:3001/users/login", {
+            const res = await fetch("http://192.168.1.100:3001/users/login", {
                 method: "POST",
                 credentials: "include",
                 headers: { 'Content-Type': 'application/json' },
@@ -23,7 +23,7 @@ const Login = () => {
             if (res.status === 200) {
                 if (data.user) {
                     login(data.user); // Nastavite uporabnika v kontekstu
-                    navigation.navigate("FaceId"); // Navigirajte na domačo stran
+                    navigation.navigate("Home"); // spremenimo v FaceId
                 } else {
                     setError("Invalid credentials or login failed");
                 }

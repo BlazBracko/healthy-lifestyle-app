@@ -11,6 +11,24 @@ exports.getAllActivities = async (req, res) => {
     }
 };
 
+// Pridobi aktivnosti uporabnika
+exports.getUserActivities = async (req, res) => {
+    try {
+        // Pridobi userId iz params
+        const userId = req.params.userId;
+        let activities;
+        if (userId) {
+            // Filtrira aktivnosti po userId
+            activities = await Activity.find({ userID: userId });
+        } else {
+            return res.status(400).json({ message: "No userId provided" });
+        }
+        res.status(200).json(activities);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // Pridobi aktivnost po ID
 exports.getActivityById = async (req, res) => {
     try {
@@ -23,12 +41,8 @@ exports.getActivityById = async (req, res) => {
 };
 
 // Dodaj novo aktivnost
-// Add new activity
 exports.createActivity = async (req, res) => {
     const { userID, type, startTime } = req.body;
-    console.log(userID, " user id");
-    console.log(type, " type");
-    console.log(startTime, " starttime");
     // Create a new Activity document only with userID, type, and startTime
     
     //const weatherData = await scrapeWeather();
@@ -82,7 +96,7 @@ exports.updateActivityData = async (req, res) => {
 
 // Function to end an activity and update the end time
 exports.endActivity = async (req, res) => {
-    const { activityId, endTime } = req.body;
+    const { activityId, endTime, stepCount, caloriesBurned } = req.body;
 
     try {
         // Fetch the complete activity including its location data
@@ -111,8 +125,10 @@ exports.endActivity = async (req, res) => {
 
         // Update the activity with the end time, total distance, and weather conditions
         activity.endTime = new Date(endTime);
-        activity.distance = totalDistance * 1000;
+        activity.distance = totalDistance; //km
         activity.weatherConditions = weatherData._id;
+        activity.stepCount = stepCount;
+        activity.caloriesBurned = caloriesBurned;
         
         const updatedActivity = await activity.save();
 

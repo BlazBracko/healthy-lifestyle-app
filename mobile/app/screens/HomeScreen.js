@@ -1,39 +1,81 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
-import { UserContext } from '../context/userContext';  // Make sure this path correctly points to your context file
+import { UserContext } from '../context/userContext';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const HomeScreen = () => {
-  const [message, setMessage] = useState('');
-  const { user } = useContext(UserContext);  // Correctly use useContext here
+    const [activities, setActivities] = useState([]);
+    const [error, setError] = useState('');
+    const { user } = useContext(UserContext);
+    const navigation = useNavigation();
 
-  useEffect(() => {
-    axios.get('http://192.168.1.220:3001/')
-      .then(response => {
-        setMessage(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-      });
-  }, []);
- // dopolnimo za user sessione
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Hello</Text>
-    </View>
-  );
+    const fetchActivities = useCallback(() => {
+        if (user) {
+            axios.get(`http://192.168.1.100:3001/activities/user/${user.id}`)
+                .then(response => {
+                    setActivities(response.data);
+                })
+                .catch(error => {
+                    setError('Failed to fetch activities');
+                    console.error('Error fetching activities:', error);
+                });
+        }
+    }, [user]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchActivities();
+        }, [fetchActivities])
+    );
+
+    if (!user) return <Text>Please login to view your activities.</Text>;
+
+    return (
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>Your Activities</Text>
+            {activities.length > 0 ? (
+                activities.map(activity => (
+                  <TouchableOpacity
+                  key={activity._id}
+                  style={styles.activityContainer}
+                  onPress={() => navigation.navigate('ShowActivity', { activityId: activity._id })}
+              >
+                  <Text style={styles.activityText}>
+                      {activity.type} on {new Date(activity.startTime).toLocaleDateString()}
+                  </Text>
+              </TouchableOpacity>
+                ))
+            ) : (
+                <Text>{error || 'No activities found.'}</Text>
+            )}
+        </ScrollView>
+    );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    color: 'white'  // Changed 'color' to 'backgroundColor' because 'color' is not a valid style property for View
-  },
-  title:{
-    color: 'white'
-  }
+    container: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        padding: 20,
+    },
+    title: {
+        color: 'black',
+        fontSize: 20,
+        marginBottom: 20,
+    },
+    activityContainer: {
+        marginBottom: 10,
+        padding: 10,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
+        width: '100%',
+    },
+    activityText: {
+        color: 'black',
+    },
 });
 
 export default HomeScreen;

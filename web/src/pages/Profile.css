@@ -1,40 +1,52 @@
-/* Profile.css */
 .form-container {
-    max-width: 500px;
-    margin: 0 auto;
     padding: 20px;
-    background: #fff;
+    padding-right: 42px;
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #e8eefa;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h1 {
+    margin: 0;
+    margin-bottom: 20px;
+    color: rgb(52, 94, 184);
 }
 
 .form-field {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
 }
 
 .form-input,
 .form-select {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
 .form-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #007BFF;
+    background-color: rgb(52, 94, 184);
     color: white;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .form-button:hover {
-    background-color: #0056b3;
+    background-color: rgb(16, 45, 108);
 }
 
 .error-message {
     color: red;
-    text-align: center;
+    margin-top: 10px;
 }
