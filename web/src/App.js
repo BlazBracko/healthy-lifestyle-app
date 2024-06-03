@@ -10,6 +10,7 @@ import Activity from './pages/Activity';
 import Profile from './pages/Profile';
 import Home from './pages/Home';
 import MyActivities from './pages/MyActivities';
+import EditProfile from './pages/EditProfile';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/activity/:activityId" element={<Activity />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/editprofile" element={<EditProfile />} />
           <Route path="/register" element={<Register />} />
           <Route path="/scrape-weather" element={<Weather />} />
           <Route path="/logout" element={<Logout />} />

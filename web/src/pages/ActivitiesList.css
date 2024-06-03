@@ -1,0 +1,76 @@
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.activities-container {
+    padding-top: 10px;
+    width: 40%;
+     /* Dodatna senca za boljši izgled */
+    border-radius: 10px;
+    
+}
+
+.activities-container p{
+    color: #2d53bd;
+    margin-left: 20px;
+}
+.activities-list {
+    list-style: none;
+    padding: 0;
+}
+
+.activity-item {
+    padding: 20px;
+    margin-top: 20px;
+    background-color: #f8faff;
+    border-radius: 20px;
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.activity-header strong {
+    font-size: 1.8em;
+}
+
+.activity-date {
+    color: #888;
+}
+
+.activity-details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.activity-detail {
+    flex: 1;
+    text-align: center;
+}
+
+.activity-detail small {
+    display: block;
+    color: #666;
+}
+
+.activity-detail strong {
+    display: block;
+    font-size: 1.1em;
+}
+
+.map-container {
+    height: 200px;
+    margin-top: 10px;
+}
+
+.activity-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
