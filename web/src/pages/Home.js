@@ -17,7 +17,11 @@ function Home() {
             .then(response => {
               // Filtriramo aktivnosti, da odstranimo aktivnosti trenutnega uporabnika
               const filteredActivities = response.data.filter(activity => activity.userID._id !== user.id);
-              setActivities(filteredActivities);
+
+            // Nato razvrstimo filtrirane aktivnosti po datumu začetka od najnovejše do najstarejše
+            const sortedActivities = filteredActivities.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+            setActivities(sortedActivities);
           })
           .catch(error => {
               setError('Failed to fetch activities');

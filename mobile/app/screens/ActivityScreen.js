@@ -27,7 +27,7 @@ const Activity = () => {
         if (selectedValue) {
             setIsLoading(true);
             const startTime = new Date();
-            const response = await fetch("http://172.20.10.5:3001/activities", {
+            const response = await fetch("http://164.8.206.104:3001/activities", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -66,9 +66,12 @@ const Activity = () => {
                     inputAndroid: styles.picker,
                     placeholder: styles.placeholder,
                 }}
-                useNativeAndroidPickerStyle={false} // Ensures consistent look on Android
+                useNativeAndroidPickerStyle={false}
             />
-            <TouchableOpacity style={styles.button} onPress={handleStartActivity} disabled={isLoading}>
+            <TouchableOpacity style={[styles.button, (!selectedValue || isLoading) ? styles.disabledButton : {}]}
+                onPress={handleStartActivity} // Dodajte to vrstico nazaj, če je bila po pomoti odstranjena
+                disabled={!selectedValue || isLoading}
+            >
                 {isLoading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
@@ -122,6 +125,9 @@ const styles = StyleSheet.create({
     buttonText: {
         color: 'white',
         fontSize: 16,
+    },
+    disabledButton: {
+        backgroundColor: '#879cc4',
     },
 });
 

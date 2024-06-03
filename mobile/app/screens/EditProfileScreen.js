@@ -22,7 +22,7 @@ const EditProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://172.20.10.5:3001/users/${user.id}`, { timeout: 5000 })
+            axios.get(`http://164.8.206.104:3001/users/${user.id}`, { timeout: 5000 })
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -49,7 +49,7 @@ const EditProfileScreen = () => {
 
     const handleSubmit = async () => {
         try {
-            const res = await axios.put(`http://172.20.10.5:3001/users/${user.id}`, profile, { timeout: 5000 });
+            const res = await axios.put(`http://164.8.206.104:3001/users/${user.id}`, profile, { timeout: 5000 });
             Alert.alert('Success', 'Profile updated successfully!');
             console.log(res.data);
         } catch (error) {

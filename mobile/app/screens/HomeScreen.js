@@ -15,8 +15,10 @@ const HomeScreen = () => {
     const fetchActivities = async () => {
         if (user) {
             try {
-                const response = await axios.get(`http://172.20.10.5:3001/activities/user/${user.id}`);
-                setActivities(response.data);
+                const response = await axios.get(`http://164.8.206.104:3001/activities/user/${user.id}`);
+                
+                const sortedActivities = response.data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+                setActivities(sortedActivities);
             } catch (error) {
                 setError('Failed to fetch activities');
                 console.error('Error fetching activities:', error);
@@ -101,7 +103,7 @@ const HomeScreen = () => {
                                         latitude: loc.latitude,
                                         longitude: loc.longitude
                                     }))}
-                                    strokeColor="#000" 
+                                    strokeColor="#337aff" 
                                     strokeWidth={3}
                                 />
                             </MapView>
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
     activityHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: 20,
     },
     activityType: {
         fontSize: 18,

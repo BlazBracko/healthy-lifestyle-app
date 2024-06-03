@@ -15,7 +15,11 @@ function MyActivities() {
         if (user) {
             axios.get(`http://localhost:3001/activities/user/${user.id}`)
                 .then(response => {
-                    setActivities(response.data);
+                    //od najnovejše do najstarejše
+                    const sortedActivities = response.data.sort((a, b) => {
+                        return new Date(b.startTime) - new Date(a.startTime);
+                    });
+                    setActivities(sortedActivities);
                 })
                 .catch(error => {
                     setError('Failed to fetch activities');

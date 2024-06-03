@@ -18,7 +18,7 @@ const ActivityTracking = ({ route }) => {
         setElapsedTime(0); // Reset timer when component mounts
 
         const sendLocationData = async (latitude, longitude, altitude) => {
-            await fetch("http://172.20.10.5:3001/activities/update", {
+            await fetch("http://164.8.206.104:3001/activities/update", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ const ActivityTracking = ({ route }) => {
 
     const handleEndActivity = async () => {
         const endTime = new Date();
-        await fetch("http://172.20.10.5:3001/activities/end", {
+        await fetch("http://164.8.206.104:3001/activities/end", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

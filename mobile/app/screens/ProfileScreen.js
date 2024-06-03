@@ -24,7 +24,7 @@ const ProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://172.20.10.5:3001/users/${user.id}`)
+            axios.get(`http://164.8.206.104:3001/users/${user.id}`)
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
