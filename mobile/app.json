@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "mobile",
-    "owner": "anejapasalic",
-    "slug": "mobile",
+    "owner": "blazbracko",
+    "slug": "mobile-f-smamsstlbfdx02jlhfw",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -53,7 +53,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "4a2b32e5-bc50-4257-b802-c3ade12eec88"
+        "projectId": "8b309b3b-ad85-4a75-92c8-c1f211cbd1b4"
       }
     }
   }

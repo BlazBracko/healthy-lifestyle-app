@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert 
 import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
 import { UserContext } from '../context/userContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const EditProfileScreen = () => {
     const { user } = useContext(UserContext);
@@ -19,10 +19,11 @@ const EditProfileScreen = () => {
     });
     const [errors, setErrors] = useState('');
     const navigation = useNavigation();
+    const route = useRoute();
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://164.8.206.104:3001/users/${user.id}`, { timeout: 5000 })
+            axios.get(`https://c6ea-164-8-222-67.ngrok-free.app/users/${user.id}`, { timeout: 5000 })
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -49,9 +50,9 @@ const EditProfileScreen = () => {
 
     const handleSubmit = async () => {
         try {
-            const res = await axios.put(`http://164.8.206.104:3001/users/${user.id}`, profile, { timeout: 5000 });
-            Alert.alert('Success', 'Profile updated successfully!');
-            console.log(res.data);
+            const res = await axios.put(`https://c6ea-164-8-222-67.ngrok-free.app/users/${user.id}`, profile, { timeout: 5000 });
+            route.params.onGoBack();
+            navigation.navigate('Profile');
         } catch (error) {
             setErrors('Failed to update profile');
             console.error('Error updating profile:', error);

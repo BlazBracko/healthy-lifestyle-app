@@ -58,7 +58,7 @@ function MyActivities() {
                                     <div className="activity-details">
                                         <div className="activity-detail">
                                             <small>Distance</small>
-                                            <strong>{activity.distance.toFixed(2)} km</strong>
+                                            <strong>{activity.distance ? activity.distance.toFixed(2) : 0} km</strong>
                                         </div>
                                         <div className="activity-detail">
                                             <small>Steps</small>
