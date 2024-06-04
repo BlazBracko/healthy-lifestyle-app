@@ -70,6 +70,7 @@ function Profile() {
 
         const stepsData = [];
         const distanceData = [];
+        const altitudeData = [];
         const labels = [];
         for (let i = 0; i < 7; i++) {
             const date = new Date(weekAgo);
@@ -83,9 +84,21 @@ function Profile() {
 
             const dailySteps = dailyActivities.reduce((total, activity) => total + activity.stepCount, 0);
             const dailyDistance = dailyActivities.reduce((total, activity) => total + activity.distance, 0);
+            // Calculate daily altitude change
+            const dailyAltitudeChange = dailyActivities.reduce((total, activity) => {
+                let altitudeChange = 0;
+                const altitudeChanges = activity.altitudeChanges;
+                if (altitudeChanges && altitudeChanges.length > 1) {
+                    for (let j = 1; j < altitudeChanges.length; j++) {
+                        altitudeChange += Math.abs(altitudeChanges[j].altitude - altitudeChanges[j - 1].altitude);
+                    }
+                }
+                return total + altitudeChange;
+            }, 0);
 
             stepsData.push(dailySteps);
             distanceData.push(dailyDistance.toFixed(2));
+            altitudeData.push(dailyAltitudeChange);
         }
 
         return {
@@ -108,6 +121,17 @@ function Profile() {
                         data: distanceData,
                         borderColor: '#ff6347',
                         backgroundColor: '#ff6347',
+                    }
+                ]
+            },
+            altitude: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Altitude change in Last 7 Days (m)',
+                        data: altitudeData,
+                        borderColor: '#32a852',
+                        backgroundColor: '#32a852',
                     }
                 ]
             }
@@ -139,6 +163,7 @@ function Profile() {
                 {/*Line komponenta iz react-chartjs-2 sprejme podatke preko data propa. Ti podatki so vrnjeni iz funkcije getActivityDataForLastWeek*/}
                 <Line data={activityData.distance} />
                 <Line data={activityData.steps} />
+                <Line data={activityData.altitude} />
             </div>
             {errors && <p className="error-message">{errors}</p>}
         </div>

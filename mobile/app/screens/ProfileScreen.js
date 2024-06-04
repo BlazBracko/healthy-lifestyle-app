@@ -24,28 +24,32 @@ const ProfileScreen = () => {
     const navigation = useNavigation();
 
     useEffect(() => {
-        if (user) {
-            axios.get(`http://164.8.206.104:3001/users/${user.id}`)
-                .then(response => {
-                    const fetchedProfile = response.data;
-                    setProfile({
-                        name: fetchedProfile.name || '',
-                        surname: fetchedProfile.surname || '',
-                        username: fetchedProfile.username || '',
-                        email: fetchedProfile.email || '',
-                        age: fetchedProfile.age || '',
-                        height: fetchedProfile.height || '',
-                        weight: fetchedProfile.weight || '',
-                        gender: fetchedProfile.gender || ''
-                    });
-                })
-                .catch(error => setErrors('Failed to fetch profile'));
-        }
-    }, [user]);
+      refreshProfile();
+  }, [user]);
+
+    const refreshProfile = () => {
+      if (user) {
+          axios.get(`https://c6ea-164-8-222-67.ngrok-free.app/users/${user.id}`)
+              .then(response => {
+                  const fetchedProfile = response.data;
+                  setProfile({
+                      name: fetchedProfile.name || '',
+                      surname: fetchedProfile.surname || '',
+                      username: fetchedProfile.username || '',
+                      email: fetchedProfile.email || '',
+                      age: fetchedProfile.age || '',
+                      height: fetchedProfile.height || '',
+                      weight: fetchedProfile.weight || '',
+                      gender: fetchedProfile.gender || ''
+                  });
+              })
+              .catch(error => setErrors('Failed to fetch profile'));
+      }
+  };
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://164.8.206.104:3001/activities/user/${user.id}`)
+            axios.get(`https://c6ea-164-8-222-67.ngrok-free.app/activities/user/${user.id}`)
                 .then(response => {
                     setActivities(response.data);
                 })
@@ -104,7 +108,7 @@ const ProfileScreen = () => {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={styles.editButton}>
+                <TouchableOpacity onPress={() => navigation.navigate('EditProfile', { onGoBack: () => refreshProfile() })} style={styles.editButton}>
                     <Icon name="edit" size={20} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={logout} style={styles.logoutButton}>
