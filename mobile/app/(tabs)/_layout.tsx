@@ -41,7 +41,7 @@ export default function Tabs() {
       {user ? (
         <>
           <Tab.Screen name="Home" component={HomeScreen} />
-          <Tab.Screen name="Profile" component={ProfileScreen} />
+          <Tab.Screen name="Profile" component={ProfileScreen} options={{ }}/>
           <Tab.Screen name="EditProfile" component={EditProfileScreen} options={{ tabBarButton: () => null }} /> 
           <Tab.Screen name="New Activity" component={ActivityScreen} />
           <Tab.Screen name="ActivityTracking" component={ActivityTrackingScreen} options={{ tabBarButton: () => null }} /> 

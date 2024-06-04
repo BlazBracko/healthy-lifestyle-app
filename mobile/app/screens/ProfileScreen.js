@@ -5,9 +5,10 @@ import { UserContext } from '../context/userContext';
 import { useNavigation } from '@react-navigation/native';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const ProfileScreen = () => {
-    const { user } = useContext(UserContext);
+    const { user, logout } = useContext(UserContext);
     const [profile, setProfile] = useState({
         name: '',
         surname: '',
@@ -44,7 +45,7 @@ const ProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://192.168.137.171:3001/activities/user/${user.id}`)
+            axios.get(`http://164.8.206.104:3001/activities/user/${user.id}`)
                 .then(response => {
                     setActivities(response.data);
                 })
@@ -103,9 +104,11 @@ const ProfileScreen = () => {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.header}>
-                <Text ></Text>
                 <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={styles.editButton}>
-                    <Text style={styles.editButtonText}>Edit</Text>
+                    <Icon name="edit" size={20} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+                    <Text style={styles.logoutButtonText}>Logout</Text>
                 </TouchableOpacity>
             </View>
             <View style={styles.profileContainer}>
@@ -170,20 +173,20 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     editButton: {
+        flexDirection: 'row',
+        alignItems: 'mesh',
+        justifyContent: 'center',
         backgroundColor: '#007AFF',
         paddingVertical: 5,
         paddingHorizontal: 10,
         borderRadius: 5,
     },
-    editButtonText: {
-        color: '#fff',
-        fontSize: 16,
-    },
     profileContainer: {
         marginBottom: 20,
     },
     profileName: {
-        alignItems: 'center',
+        marginTop: 30,
+        marginLeft: 8,
     },
     profileNameText: {
         fontSize: 24,
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
     },
     profileInfo: {
         marginTop: 20,
-        alignItems: 'center',
+        marginLeft: 8,
     },
     infoText: {
         fontSize: 16,
@@ -223,6 +226,10 @@ const styles = StyleSheet.create({
         marginTop: 20,
         fontSize: 16,
         color: 'gray',
+    },
+    logoutButtonText: {
+        color: '#007AFF',
+        fontSize: 16,
     },
 });
 
