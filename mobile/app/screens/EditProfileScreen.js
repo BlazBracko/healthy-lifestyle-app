@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import axios from 'axios';
-import RNPickerSelect from 'react-native-picker-select'; // Import RNPickerSelect
+import RNPickerSelect from 'react-native-picker-select';
 import { UserContext } from '../context/userContext';
 import { useNavigation } from '@react-navigation/native';
 
 const EditProfileScreen = () => {
-    const { user, logout } = useContext(UserContext);
+    const { user } = useContext(UserContext);
     const [profile, setProfile] = useState({
         name: '',
         surname: '',
@@ -22,7 +22,7 @@ const EditProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://172.20.10.5:3001/users/${user.id}`, { timeout: 5000 })
+            axios.get(`http://164.8.206.104:3001/users/${user.id}`, { timeout: 5000 })
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -49,7 +49,7 @@ const EditProfileScreen = () => {
 
     const handleSubmit = async () => {
         try {
-            const res = await axios.put(`http://172.20.10.5:3001/users/${user.id}`, profile, { timeout: 5000 });
+            const res = await axios.put(`http://164.8.206.104:3001/users/${user.id}`, profile, { timeout: 5000 });
             Alert.alert('Success', 'Profile updated successfully!');
             console.log(res.data);
         } catch (error) {
@@ -70,9 +70,6 @@ const EditProfileScreen = () => {
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Edit Profile</Text>
-                <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-                    <Text style={styles.logoutButtonText}>Logout</Text>
-                </TouchableOpacity>
             </View>
             <View style={styles.formField}>
                 <Text style={styles.label}>Name:</Text>
@@ -181,11 +178,6 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-    },
-    logoutButton: {
-        backgroundColor: '#FF3B30',
-        padding: 10,
-        borderRadius: 5,
     },
     logoutButtonText: {
         color: '#fff',

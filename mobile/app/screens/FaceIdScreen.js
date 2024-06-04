@@ -54,7 +54,7 @@ const FaceIdScreen = () => {
     try {
 
      
-      const response = await fetch("http://192.168.137.171:3001/recognize", {
+      const response = await fetch("http://164.8.206.104:3001/recognize", {
         method: 'POST',
         body: formData,
         credentials: "include",

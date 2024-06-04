@@ -5,7 +5,7 @@ import axios from 'axios';
 import { UserContext } from '../context/userContext'; 
 import { useRoute } from '@react-navigation/native';
 
-const ActivityScreen = () => {
+const ShowActivityScreen = () => {
     const { user } = useContext(UserContext);
     const route = useRoute();
     const { activityId } = route.params;
@@ -14,7 +14,7 @@ const ActivityScreen = () => {
 
     useEffect(() => {
         if (user && activityId) {
-            axios.get(`http://172.20.10.5:3001/activities/${activityId}`)
+            axios.get(`http://164.8.206.104:3001/activities/${activityId}`)
                 .then(response => {
                     console.log('Activity data:', response.data); 
                     setActivity(response.data);
@@ -25,6 +25,19 @@ const ActivityScreen = () => {
                 });
         }
     }, [user, activityId]);
+
+    const calculateDuration = (startTime, endTime) => {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const duration = end - start;
+
+        const hours = Math.floor(duration / (1000 * 60 * 60));
+        const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+
+        return `${hours > 0 ? hours + 'h ' : ''}${minutes}min ${seconds}s`;
+    };
+
 
     if (!user) return <Text style={styles.errorText}>Please login to see your activities.</Text>;
 
@@ -39,12 +52,8 @@ const ActivityScreen = () => {
                             <Text style={styles.infoValue}>{activity.type}</Text>
                         </View>
                         <View style={styles.infoItem}>
-                            <Text style={styles.infoLabel}>Start Time</Text>
-                            <Text style={styles.infoValue}>{new Date(activity.startTime).toLocaleString()}</Text>
-                        </View>
-                        <View style={styles.infoItem}>
-                            <Text style={styles.infoLabel}>End Time</Text>
-                            <Text style={styles.infoValue}>{new Date(activity.endTime).toLocaleString()}</Text>
+                            <Text style={styles.infoLabel}>Duration</Text>
+                            <Text style={styles.infoValue}>{calculateDuration(activity.startTime, activity.endTime)}</Text>
                         </View>
                         <View style={styles.infoItem}>
                             <Text style={styles.infoLabel}>Distance</Text>
@@ -62,7 +71,8 @@ const ActivityScreen = () => {
 
                     {/* Map Container */}
                     {activity.locationData && activity.locationData.length > 0 ? (
-                        <MapView
+                         <MapView
+                            key={activityId}
                             style={styles.map}
                             initialRegion={{
                                 latitude: activity.locationData[0].latitude,
@@ -79,13 +89,6 @@ const ActivityScreen = () => {
                                 strokeColor="#4A90E2" 
                                 strokeWidth={4}
                             />
-                            {activity.locationData.map((loc, index) => (
-                                <Marker
-                                    key={index}
-                                    coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
-                                    title={`Point ${index + 1}`}
-                                />
-                            ))}
                         </MapView>
                     ) : (
                         <Text style={styles.noDataText}>No location data available.</Text>
@@ -157,4 +160,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ActivityScreen;
+export default ShowActivityScreen;

@@ -16,9 +16,11 @@ const ActivityTracking = ({ route }) => {
 
     useEffect(() => {
         setElapsedTime(0); // Reset timer when component mounts
+        setStepCount(0);
+        setCaloriesBurned(0);
 
         const sendLocationData = async (latitude, longitude, altitude) => {
-            await fetch("http://172.20.10.5:3001/activities/update", {
+            await fetch("http://164.8.206.104:3001/activities/update", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -61,7 +63,7 @@ const ActivityTracking = ({ route }) => {
         })();
 
         const startPedometer = async () => {
-            if (activityType === 'Walk' || activityType === 'Run') {
+            if (activityType === 'Walk' || activityType === 'Run' || activityType === 'Hike') {
                 const isAvailable = await Pedometer.isAvailableAsync();
                 if (!isAvailable) {
                     console.warn('Pedometer is not available on this device.');
@@ -116,7 +118,7 @@ const ActivityTracking = ({ route }) => {
 
     const handleEndActivity = async () => {
         const endTime = new Date();
-        await fetch("http://172.20.10.5:3001/activities/end", {
+        await fetch("http://164.8.206.104:3001/activities/end", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -128,11 +130,14 @@ const ActivityTracking = ({ route }) => {
                 caloriesBurned, 
             }),
         });
+        setElapsedTime(0); 
+        setStepCount(0);
+        setCaloriesBurned(0);
         navigation.navigate("Home");
     };
 
     const handleCancelActivity = async () => {
-        const url = `http://192.168.137.171:3001/activities/${activityId}`;
+        const url = `http://164.8.206.104:3001/activities/${activityId}`;
         try {
             const response = await fetch(url, {
                 method: 'DELETE',
@@ -149,7 +154,9 @@ const ActivityTracking = ({ route }) => {
         } catch (error) {
             console.error('Error while canceling the activity:', error);
         }
-
+        setElapsedTime(0); 
+        setStepCount(0);
+        setCaloriesBurned(0);
         navigation.navigate("Home");
     };
 
