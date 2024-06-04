@@ -59,52 +59,59 @@ def save_augmented_images(image, directory, base_name, image_index):
         os.makedirs(directory)
     cv2.imwrite(os.path.join(directory, f'{base_name}_{image_index}.jpg'), image)
 
-def process_video(video_path):
+def process_video(video_path, username):
     cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        print("Error: Could not open video.")
-        return
+    try:
+        if not cap.isOpened():
+            print("Error: Could not open video.")
+            return
 
-    frame_rate = 20  # frames to process per second
-    count = 0
+        frame_rate = 20  # frames to process per second
+        count = 0
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        # Only process certain frames to reduce workload
-        if int(cap.get(cv2.CAP_PROP_POS_FRAMES)) % int(cap.get(cv2.CAP_PROP_FPS) // frame_rate) == 0:
-            processed_image = preprocess_image(frame)  # this now returns a grayscale image
-            person_name = 'blaz'
+            # Only process certain frames to reduce workload
+            if int(cap.get(cv2.CAP_PROP_POS_FRAMES)) % int(cap.get(cv2.CAP_PROP_FPS) // frame_rate) == 0:
+                processed_image = preprocess_image(frame)  # this now returns a grayscale image
+                person_name = username
 
-            # Ensure operations compatible with grayscale are handled
-            bright = adjust_brightness(frame, 50)  # Apply brightness on the original frame
-            rotated = rotate_image(processed_image, 45)
-            flipped = flip_image(processed_image)
-            noisy = add_noise(frame)  # Apply noise on the original frame
-            translation = apply_translation(frame)  
-            contrast = change_contrast(frame)  
-            zoom = apply_zoom(frame) 
+                # Ensure operations compatible with grayscale are handled
+                bright = adjust_brightness(frame, 50)  # Apply brightness on the original frame
+                rotated = rotate_image(processed_image, 45)
+                flipped = flip_image(processed_image)
+                noisy = add_noise(frame)  # Apply noise on the original frame
+                translation = apply_translation(frame)  
+                contrast = change_contrast(frame)  
+                zoom = apply_zoom(frame) 
 
-            # Save all images
-            save_augmented_images(frame, 'learnPhotos/' + person_name, 'original', count)
-            save_augmented_images(bright, 'learnPhotos/' + person_name, 'bright', count)
-            save_augmented_images(rotated, 'learnPhotos/' + person_name, 'rotated', count)
-            save_augmented_images(flipped, 'learnPhotos/' + person_name, 'flipped', count)
-            save_augmented_images(noisy, 'learnPhotos/' + person_name, 'noisy', count)
-            save_augmented_images(translation, 'learnPhotos/' + person_name, 'translation', count)
-            save_augmented_images(contrast, 'learnPhotos/' + person_name, 'contrast', count)
-            save_augmented_images(zoom, 'learnPhotos/' + person_name, 'nozoomisy', count)
-            count += 1
+                # Save all images
+                save_augmented_images(frame, 'learnPhotos/' + person_name, 'original', count)
+                save_augmented_images(bright, 'learnPhotos/' + person_name, 'bright', count)
+                # save_augmented_images(rotated, 'learnPhotos/' + person_name, 'rotated', count)
+                save_augmented_images(flipped, 'learnPhotos/' + person_name, 'flipped', count)
+                # save_augmented_images(noisy, 'learnPhotos/' + person_name, 'noisy', count)
+                save_augmented_images(translation, 'learnPhotos/' + person_name, 'translation', count)
+                save_augmented_images(contrast, 'learnPhotos/' + person_name, 'contrast', count)
+                # save_augmented_images(zoom, 'learnPhotos/' + person_name, 'nozoomisy', count)
+                count += 1
 
-    cap.release()
-    print("Done processing video.")
+        cap.release()
+        print("Done processing video.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        cap.release()
+        print("Released video resources.")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         video_path = sys.argv[1]
+        username = sys.argv[2]
         print(f"Processing video: {video_path}")
-        process_video(video_path)
+        process_video(video_path, username)
     else:
         print(json.dumps({"error": "No video path provided"}))

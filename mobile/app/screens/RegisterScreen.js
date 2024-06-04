@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ScrollView, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { useNavigation } from '@react-navigation/native';
+import { UserContext } from '../context/userContext'; 
 
 const RegisterScreen = () => {
+    const { login } = useContext(UserContext);
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
     const [surname, setSurname] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const navigation = useNavigation();
 
     async function registerForPushNotificationsAsync() {
         let token;
@@ -51,12 +55,19 @@ const RegisterScreen = () => {
 
             if (response.status === 201) {
                 Alert.alert("Success", "You have registered successfully!");
-                setUsername('');
+                /*setUsername('');
                 setEmail('');
                 setName('');
                 setSurname('');
                 setPassword('');
-                setError('');
+                setError(''); */
+                if(jsonData.newUser) {
+                    login(jsonData.newUser);
+                    navigation.navigate("FaceIdVideo");
+                } else {
+                    setError("Invalid credentials or login failed");
+                }
+                
             } else {
                 setError(jsonData.message || "Registration failed");
                 Alert.alert("Registration Failed", jsonData.message);

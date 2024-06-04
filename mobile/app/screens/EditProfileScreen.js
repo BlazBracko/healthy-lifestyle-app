@@ -29,7 +29,6 @@ const EditProfileScreen = () => {
                     setProfile({
                         name: fetchedProfile.name || '',
                         surname: fetchedProfile.surname || '',
-                        username: fetchedProfile.username || '',
                         email: fetchedProfile.email || '',
                         age: fetchedProfile.age ? fetchedProfile.age.toString() : '',
                         height: fetchedProfile.height ? fetchedProfile.height.toString() : '',
@@ -86,14 +85,6 @@ const EditProfileScreen = () => {
                     style={styles.input}
                     value={profile.surname}
                     onChangeText={(value) => handleChange('surname', value)}
-                />
-            </View>
-            <View style={styles.formField}>
-                <Text style={styles.label}>Username:</Text>
-                <TextInput
-                    style={styles.input}
-                    value={profile.username}
-                    onChangeText={(value) => handleChange('username', value)}
                 />
             </View>
             <View style={styles.formField}>

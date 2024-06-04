@@ -1,12 +1,14 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useRef, useState, useEffect, useContext } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Camera } from 'expo-camera/legacy';
+import { UserContext } from '../context/userContext';
 import axios from 'axios';
 
 const FaceIdScreen = () => {
   const cameraRef = useRef(null);
   const [hasPermission, setHasPermission] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
+  const { user } = useContext(UserContext);
 
   useEffect(() => {
     console.log(Camera);
@@ -23,7 +25,7 @@ const FaceIdScreen = () => {
       try {
         const video = await cameraRef.current.recordAsync({
           mute: true,
-          maxDuration: 10
+          maxDuration: 2
         });
         console.log('Video recorded:', video.uri);
         uploadVideo(video.uri);
@@ -53,8 +55,8 @@ const FaceIdScreen = () => {
 
     try {
 
-     
-      const response = await fetch("http://164.8.206.104:3001/recognize", {
+     console.log(user._id);
+      const response = await fetch(`http://164.8.206.104:3001/recognize/${user.username}`, {
         method: 'POST',
         body: formData,
         credentials: "include",
