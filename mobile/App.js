@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './app/screens/HomeScreen'; 
 import FaceIdScreen from './app/screens/FaceIdScreen'; 
+import FaceIdPhotoScreen from './app/screens/FaceIdPhotoScreen'; 
 import ActivityScreen from './app/screens/ActivityScreen'; 
 import ActivityTrackingScreen from './app/screens/ActivityTrackingScreen'; 
 import RegisterScreen from './app/screens/RegisterScreen';
@@ -18,7 +19,8 @@ const linking = {
   config: {
     screens: {
       Home: 'home',
-      FaceId: 'faceid',
+      FaceIdVideo: 'faceidvideo',
+      FaceIdPhoto: 'faceidphoto',
       Login: 'login',
       Register: 'register',
       Activity: 'activity'
@@ -77,7 +79,8 @@ export default function App() {
       <NavigationContainer linking={linking} ref={navigationRef}>
         <Stack.Navigator initialRouteName="Home">
           <Stack.Screen name="Home" component={HomeScreen}  options={{ title: 'Home' }}/>
-          <Stack.Screen name="FaceId" component={FaceIdScreen}  options={{ title: 'FaceId' }}/>
+          <Stack.Screen name="FaceIdVideo" component={FaceIdScreen}  options={{ title: 'FaceIdVideo' }}/>
+          <Stack.Screen name="FaceIdPhoto" component={FaceIdPhotoScreen}  options={{ title: 'FaceIdPhoto' }}/>
           <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
           <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Register' }} />
           <Stack.Screen name="Activity" component={ActivityScreen} options={{ title: 'Activity' }} />

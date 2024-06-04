@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { UserContext } from '../context/userContext'; // Pravilno uvozite kontekst
+import { UserContext } from '../context/userContext'; 
 
 const Login = () => {
     const { login } = useContext(UserContext); // Uporabite pravilno ime funkcije
@@ -23,7 +23,7 @@ const Login = () => {
             if (res.status === 200) {
                 if (data.user) {
                     login(data.user); // Nastavite uporabnika v kontekstu
-                    navigation.navigate("Home"); // spremenimo v FaceId
+                    navigation.navigate("FaceIdPhoto"); // spremenimo v FaceId
                 } else {
                     setError("Invalid credentials or login failed");
                 }

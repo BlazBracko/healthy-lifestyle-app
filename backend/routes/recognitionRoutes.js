@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { uploadVideo, processVideo } = require('../controllers/recognitionController');
+const { upload, processVideo, processPhoto } = require('../controllers/recognitionController');
 
+router.post('/user/:username', upload.single('photo'), processPhoto);
 // Updated to handle video upload
-router.post('/', uploadVideo.single('video'), processVideo);
+router.post('/:username', upload.single('video'), processVideo);
 
 module.exports = router;

@@ -63,8 +63,8 @@ exports.createUser = async (req, res) => {
                 console.error("Failed to send notification:", error);
             }
         }
-
-        res.status(201).json(newUser);
+        console.log(newUser);
+        res.status(201).json({newUser});
     } catch (err) {
         console.error("Error during user creation:", err);
         res.status(500).json({ message: err.message });
