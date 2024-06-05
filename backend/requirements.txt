@@ -6,7 +6,7 @@ certifi==2024.2.2
 charset-normalizer==3.3.2
 click==8.1.7
 Flask==3.0.3
-flatbuffers==24.3.25
+flatbuffers>=1.12,<2
 gast==0.4.0
 google-auth==2.29.0
 google-auth-oauthlib>=0.4.1,<0.5
