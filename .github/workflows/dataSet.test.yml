@@ -26,7 +26,7 @@ jobs:
 
     - name: Run tests
       run: |
-        pytest tests/dataSet.test.py  # Specifying the path to your test file
+        pytest backend/tests/dataSet.test.py  # Specifying the path to your test file
 
     - name: Upload test results
       if: always()
