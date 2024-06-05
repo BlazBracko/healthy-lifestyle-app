@@ -18,7 +18,7 @@ importlib_metadata==7.1.0
 itsdangerous==2.2.0
 Jinja2==3.1.4
 joblib==1.4.2
-keras==2.13.1
+keras>=2.9.0,<2.10.0
 keras-tuner==1.4.7
 kt-legacy==1.0.5
 libclang==18.1.1
