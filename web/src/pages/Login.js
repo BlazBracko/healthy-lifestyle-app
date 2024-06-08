@@ -44,7 +44,6 @@ function Login() {
             <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
             <Button type="submit" title="Login" />
             <label className="error-message">{error}</label>
-            <p>Don't have an account? <Link to="/register" className="sign-up-link">Sign up</Link></p>
         </form>
     );
 }

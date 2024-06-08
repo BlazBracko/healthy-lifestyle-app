@@ -12,7 +12,7 @@ const Login = () => {
 
     const handleLogin = async () => {
         try {
-            const res = await fetch("http://164.8.206.104:3001/users/login", {
+            const res = await fetch("https://mallard-set-akita.ngrok-free.app/users/login", {
                 method: "POST",
                 credentials: "include",
                 headers: { 'Content-Type': 'application/json' },
@@ -23,7 +23,7 @@ const Login = () => {
             if (res.status === 200) {
                 if (data.user) {
                     login(data.user); // Nastavite uporabnika v kontekstu
-                    navigation.navigate("FaceIdPhoto"); // spremenimo v FaceId
+                    navigation.navigate("Home"); // spremenimo v FaceIdPhoto
                 } else {
                     setError("Invalid credentials or login failed");
                 }

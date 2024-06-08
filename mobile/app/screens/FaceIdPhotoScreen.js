@@ -52,7 +52,7 @@ const FaceIdPhotoScreen = () => {
 
       console.log('Sending picture to server...');
       // Pošlji sliko na strežnik
-      axios.post(`http://164.8.206.104:3001/recognize/user/${user.username}`, data)
+      axios.post(`https://mallard-set-akita.ngrok-free.app/recognize/user/${user.username}`, data)
         .then(response => {
           const matchFound = response.data.is_match;
           setResponse(matchFound ? "Face match found" : "No face match found");

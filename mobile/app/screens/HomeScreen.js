@@ -15,7 +15,7 @@ const HomeScreen = () => {
     const fetchActivities = async () => {
         if (user) {
             try {
-                const response = await axios.get(`http://164.8.206.104:3001/activities/user/${user.id}`);
+                const response = await axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user.id}`);
                 
                 const sortedActivities = response.data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
                 setActivities(sortedActivities);
@@ -48,6 +48,29 @@ const HomeScreen = () => {
         return `${hours > 0 ? hours + 'h ' : ''}${minutes}min ${seconds}s`;
     };
 
+    const calculateAltitudeChange = (altitudeChanges) => {
+        if (!altitudeChanges || altitudeChanges.length < 2) return 0;
+
+        let totalChange = 0;
+        for (let i = 1; i < altitudeChanges.length; i++) {
+            totalChange += Math.abs(altitudeChanges[i].altitude - altitudeChanges[i - 1].altitude);
+        }
+        return Math.round(totalChange);
+    };
+
+    const calculateSpeed = (distance, duration) => {
+        if (duration === 0) return 0;
+        return (distance / (duration / 3600000)).toFixed(2); // vrne hitrost v km/h
+    };
+
+    const calculatePace = (distance, duration) => {
+        if (distance === 0) return '0:00 min/km';
+            const pace = duration / distance;
+            const minutes = Math.floor(pace / 60000);
+            const seconds = Math.floor((pace % 60000) / 1000);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds} min/km`;
+    };
+
     if (!user) return <Text style={styles.errorText}>Please login to view your activities.</Text>;
 
     return (
@@ -76,10 +99,36 @@ const HomeScreen = () => {
                                         {activity.distance !== undefined ? activity.distance.toFixed(3) : 'N/A'} km
                                     </Text>
                                 </View>
+                                {activity.type.toLowerCase() === 'run' && (
+                                <View style={styles.activityDetail}>
+                                    <Text style={styles.detailLabel}>Pace</Text>
+                                    <Text style={styles.detailValue}>
+                                        {calculatePace(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))}
+                                    </Text>
+                                </View>
+                            )}
+                            {activity.type.toLowerCase() === 'hike' && (
+                                <View style={styles.activityDetail}>
+                                    <Text style={styles.detailLabel}>Altitude Change</Text>
+                                    <Text style={styles.detailValue}>
+                                        {calculateAltitudeChange(activity.altitudeChanges)} m
+                                    </Text>
+                                </View>
+                            )}
+                            {activity.type.toLowerCase() === 'cycle' && (
+                                <View style={styles.activityDetail}>
+                                    <Text style={styles.detailLabel}>Speed</Text>
+                                    <Text style={styles.detailValue}>
+                                        {calculateSpeed(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))} km/h
+                                    </Text>
+                                </View>
+                            )}
+                            {activity.type.toLowerCase() === 'walk' && (
                                 <View style={styles.activityDetail}>
                                     <Text style={styles.detailLabel}>Steps</Text>
                                     <Text style={styles.detailValue}>{activity.stepCount}</Text>
                                 </View>
+                            )}
                                 <View style={styles.activityDetail}>
                                     <Text style={styles.detailLabel}>Time</Text>
                                     <Text style={styles.detailValue}>{calculateDuration(activity.startTime, activity.endTime)}</Text>

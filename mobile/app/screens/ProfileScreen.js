@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import axios from 'axios';
 import { UserContext } from '../context/userContext';
 import { useNavigation } from '@react-navigation/native';
-import { LineChart } from 'react-native-chart-kit';
+import { LineChart, BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+
+const screenWidth = Dimensions.get('window').width;
 
 const ProfileScreen = () => {
     const { user, logout } = useContext(UserContext);
@@ -24,32 +26,32 @@ const ProfileScreen = () => {
     const navigation = useNavigation();
 
     useEffect(() => {
-      refreshProfile();
-  }, [user]);
+        refreshProfile();
+    }, [user]);
 
     const refreshProfile = () => {
-      if (user) {
-          axios.get(`https://c6ea-164-8-222-67.ngrok-free.app/users/${user.id}`)
-              .then(response => {
-                  const fetchedProfile = response.data;
-                  setProfile({
-                      name: fetchedProfile.name || '',
-                      surname: fetchedProfile.surname || '',
-                      username: fetchedProfile.username || '',
-                      email: fetchedProfile.email || '',
-                      age: fetchedProfile.age || '',
-                      height: fetchedProfile.height || '',
-                      weight: fetchedProfile.weight || '',
-                      gender: fetchedProfile.gender || ''
-                  });
-              })
-              .catch(error => setErrors('Failed to fetch profile'));
-      }
-  };
+        if (user) {
+            axios.get(`https://mallard-set-akita.ngrok-free.app/users/${user.id}`)
+                .then(response => {
+                    const fetchedProfile = response.data;
+                    setProfile({
+                        name: fetchedProfile.name || '',
+                        surname: fetchedProfile.surname || '',
+                        username: fetchedProfile.username || '',
+                        email: fetchedProfile.email || '',
+                        age: fetchedProfile.age || '',
+                        height: fetchedProfile.height || '',
+                        weight: fetchedProfile.weight || '',
+                        gender: fetchedProfile.gender || ''
+                    });
+                })
+                .catch(error => setErrors('Failed to fetch profile'));
+        }
+    };
 
     useEffect(() => {
         if (user) {
-            axios.get(`https://c6ea-164-8-222-67.ngrok-free.app/activities/user/${user.id}`)
+            axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user.id}`)
                 .then(response => {
                     setActivities(response.data);
                 })
@@ -70,11 +72,14 @@ const ProfileScreen = () => {
             return activityDate >= weekAgo && activityDate <= today;
         });
 
-        const data = Array(7).fill(0);
-        const labels = ['Day 1', 'Day 2' ,'Day 3' ,'Day 4' ,'Day 5' ,'Day 6', 'Day 7'];
+        const stepsData = [];
+        const distanceData = [];
+        const altitudeData = [];
+        const labels = [];
         for (let i = 0; i < 7; i++) {
             const date = new Date(weekAgo);
             date.setDate(weekAgo.getDate() + i);
+            labels.push(date.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }));
 
             const dailyActivities = filteredActivities.filter(activity => {
                 const activityDate = new Date(activity.startTime);
@@ -82,26 +87,61 @@ const ProfileScreen = () => {
             });
 
             const dailySteps = dailyActivities.reduce((total, activity) => total + activity.stepCount, 0);
-            data[i] = isNaN(dailySteps) ? 0 : dailySteps; // Ensure valid numbers
+            const dailyDistance = dailyActivities.reduce((total, activity) => total + activity.distance, 0);
+            const dailyAltitudeChange = dailyActivities.reduce((total, activity) => {
+                let altitudeChange = 0;
+                const altitudeChanges = activity.altitudeChanges;
+                if (altitudeChanges && altitudeChanges.length > 1) {
+                    for (let j = 1; j < altitudeChanges.length; j++) {
+                        altitudeChange += Math.abs(altitudeChanges[j].altitude - altitudeChanges[j - 1].altitude);
+                    }
+                }
+                return total + altitudeChange;
+            }, 0);
+
+            stepsData.push(dailySteps);
+            distanceData.push(parseFloat(dailyDistance.toFixed(2)));
+            altitudeData.push(dailyAltitudeChange);
         }
 
         return {
-            labels,
-            datasets: [
-                {
-                    label: 'Steps in Last 7 Days',
-                    data,
-                    color: (opacity = 1) => `rgba(45, 83, 189, ${opacity})`, // optional
-                    strokeWidth: 2 // optional
-                }
-            ]
+            steps: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Steps',
+                        data: stepsData,
+                        color: (opacity = 1) => `rgba(45, 83, 189, ${opacity})`, // optional
+                        strokeWidth: 2 // optional
+                    }
+                ]
+            },
+            distance: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Distance',
+                        data: distanceData,
+                        color: (opacity = 1) => `rgba(252, 3, 161, ${opacity})`, // optional
+                        strokeWidth: 2 // optional
+                    }
+                ]
+            },
+            altitude: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Altitude change',
+                        data: altitudeData,
+                        color: (opacity = 1) => `rgba(250, 140, 50, ${opacity})`, // optional
+                        strokeWidth: 2 // optional
+                    }
+                ]
+            }
         };
     };
 
-    useEffect(() => {
-        console.log('Activities:', activities);
-        console.log('Chart Data:', getActivityDataForLastWeek());
-    }, [activities]);
+    const activityData = getActivityDataForLastWeek();
 
     if (!user) return <Text style={styles.loginMessage}>Please login to view this page.</Text>;
 
@@ -127,16 +167,16 @@ const ProfileScreen = () => {
                 </View>
             </View>
             <View style={styles.chartContainer}>
-                <Text style={styles.chartTitle}>Activity in Last 7 Days</Text>
-                <LineChart
-                    data={getActivityDataForLastWeek()}
-                    width={Dimensions.get('window').width - 40} // from react-native
+                <Text style={styles.chartTitle}>Steps in Last 7 Days</Text>
+                <BarChart
+                    data={activityData.steps}
+                    width={screenWidth - 40}
                     height={220}
                     chartConfig={{
                         backgroundColor: '#ffffff',
                         backgroundGradientFrom: '#ffffff',
                         backgroundGradientTo: '#ffffff',
-                        decimalPlaces: 0, // optional, defaults to 2dp
+                        decimalPlaces: 0,
                         color: (opacity = 1) => `rgba(45, 83, 189, ${opacity})`,
                         labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                         style: {
@@ -146,6 +186,59 @@ const ProfileScreen = () => {
                             r: '6',
                             strokeWidth: '2',
                             stroke: '#2d53bd'
+                        }
+                    }}
+                    style={{
+                        marginVertical: 8,
+                        borderRadius: 16
+                    }}
+                />
+                <Text style={styles.chartTitle}>Distance in Last 7 Days</Text>
+                <LineChart
+                    data={activityData.distance}
+                    width={screenWidth - 40}
+                    height={220}
+                    chartConfig={{
+                        backgroundColor: '#ffffff',
+                        backgroundGradientFrom: '#ffffff',
+                        backgroundGradientTo: '#ffffff',
+                        decimalPlaces: 2,
+                        color: (opacity = 1) => `rgba(252, 3, 161, ${opacity})`,
+                        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                        style: {
+                            borderRadius: 16
+                        },
+                        propsForDots: {
+                            r: '6',
+                            strokeWidth: '2',
+                            stroke: '#fc03a1'
+                        }
+                    }}
+                    bezier
+                    style={{
+                        marginVertical: 8,
+                        borderRadius: 16
+                    }}
+                />
+                <Text style={styles.chartTitle}>Altitude Change in Last 7 Days</Text>
+                <LineChart
+                    data={activityData.altitude}
+                    width={screenWidth - 40}
+                    height={220}
+                    chartConfig={{
+                        backgroundColor: '#ffffff',
+                        backgroundGradientFrom: '#ffffff',
+                        backgroundGradientTo: '#ffffff',
+                        decimalPlaces: 2,
+                        color: (opacity = 1) => `rgba(250, 140, 50, ${opacity})`,
+                        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                        style: {
+                            borderRadius: 16
+                        },
+                        propsForDots: {
+                            r: '6',
+                            strokeWidth: '2',
+                            stroke: '#fa8c32'
                         }
                     }}
                     bezier
@@ -171,14 +264,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-    },
     editButton: {
         flexDirection: 'row',
-        alignItems: 'mesh',
+        alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#007AFF',
         paddingVertical: 5,

@@ -27,29 +27,38 @@ const Activity = () => {
         if (selectedValue) {
             setIsLoading(true);
             const startTime = new Date();
-            const response = await fetch("http://164.8.206.104:3001/activities", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userID: user.id,
-                    type: selectedValue,
-                    startTime: startTime.toISOString(),
-                }),
-            });
-
-            const data = await response.json();
-            setIsLoading(false);
-            if (response.ok) {
-                navigation.navigate("ActivityTracking", {
-                    activityType: selectedValue,
-                    startTime: startTime.toISOString(),
-                    activityId: data.activityId,
+            try {
+                const response = await fetch("https://mallard-set-akita.ngrok-free.app/activities", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userID: user.id,
+                        type: selectedValue,
+                        startTime: startTime.toISOString(),
+                    }),
                 });
-            } else {
-                console.error('Failed to start activity', data);
+
+                const data = await response.json();
+                setIsLoading(false);
+
+                if (response.ok) {
+                    console.log('Activity started successfully', data);
+                    navigation.navigate("ActivityTracking", {
+                        activityType: selectedValue,
+                        startTime: startTime.toISOString(),
+                        activityId: data.activityId,
+                    });
+                } else {
+                    console.error('Failed to start activity', data);
+                }
+            } catch (error) {
+                setIsLoading(false);
+                console.error('Error starting activity', error);
             }
+        } else {
+            console.log('No workout type selected');
         }
     };
 
@@ -69,7 +78,7 @@ const Activity = () => {
                 useNativeAndroidPickerStyle={false}
             />
             <TouchableOpacity style={[styles.button, (!selectedValue || isLoading) ? styles.disabledButton : {}]}
-                onPress={handleStartActivity} // Dodajte to vrstico nazaj, če je bila po pomoti odstranjena
+                onPress={handleStartActivity}
                 disabled={!selectedValue || isLoading}
             >
                 {isLoading ? (

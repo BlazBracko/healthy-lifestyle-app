@@ -54,8 +54,8 @@ export default function Tabs() {
       ) : (
         // Tabs visible only when user is not logged in
         <>
-          <Tab.Screen name="Login" component={LoginScreen} options={{ tabBarButton: () => null }}/>
-          <Tab.Screen name="Home" component={HomeScreen} />
+          <Tab.Screen name="Login" component={LoginScreen}/>
+          <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarButton: () => null }}/>
           <Tab.Screen name="Register" component={RegisterScreen} options={{ tabBarButton: () => null }} />
           <Tab.Screen name="FaceIdVideo" component={FaceIdScreen} options={{ tabBarButton: () => null }} /> 
         </>
