@@ -56,7 +56,7 @@ const FaceIdScreen = () => {
     try {
 
      console.log(user._id);
-      const response = await fetch(`http://164.8.206.104:3001/recognize/${user.username}`, {
+      const response = await fetch(`https://mallard-set-akita.ngrok-free.app/recognize/${user.username}`, {
         method: 'POST',
         body: formData,
         credentials: "include",

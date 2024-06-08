@@ -40,6 +40,29 @@ function MyActivities() {
         return `${hours > 0 ? hours + 'h ' : ''}${minutes}min ${seconds}s`;
     };
 
+    const calculateAltitudeChange = (altitudeChanges) => {
+        if (!altitudeChanges || altitudeChanges.length < 2) return 0;
+
+        let totalChange = 0;
+        for (let i = 1; i < altitudeChanges.length; i++) {
+            totalChange += Math.abs(altitudeChanges[i].altitude - altitudeChanges[i - 1].altitude);
+        }
+        return Math.round(totalChange);
+    };
+
+    const calculateSpeed = (distance, duration) => {
+        if (duration === 0) return 0;
+        return (distance / (duration / 3600000)).toFixed(2); // vrne hitrost v km/h
+    };
+
+    const calculatePace = (distance, duration) => {
+        if (distance === 0) return '0:00 min/km';
+        const pace = duration / distance;
+        const minutes = Math.floor(pace / 60000);
+        const seconds = Math.floor((pace % 60000) / 1000);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds} min/km`;
+    };
+
     if (!user) return <p>Please login to view your activities.</p>;
 
     return (
@@ -60,10 +83,30 @@ function MyActivities() {
                                             <small>Distance</small>
                                             <strong>{activity.distance ? activity.distance.toFixed(2) : 0} km</strong>
                                         </div>
-                                        <div className="activity-detail">
-                                            <small>Steps</small>
-                                            <strong>{activity.stepCount}</strong>
-                                        </div>
+                                        {activity.type.toLowerCase() === 'run' && (
+                                            <div className="activity-detail">
+                                                <small>Pace</small>
+                                                <strong>{calculatePace(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))}</strong>
+                                            </div>
+                                        )}
+                                        {activity.type.toLowerCase() === 'hike' && (
+                                            <div className="activity-detail">
+                                                <small>Altitude Change</small>
+                                                <strong>{calculateAltitudeChange(activity.altitudeChanges)} m</strong>
+                                            </div>
+                                        )}
+                                        {activity.type.toLowerCase() === 'cycle' && (
+                                            <div className="activity-detail">
+                                                <small>Speed</small>
+                                                <strong>{calculateSpeed(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))} km/h</strong>
+                                            </div>
+                                        )}
+                                        {activity.type.toLowerCase() === 'walk' && (
+                                            <div className="activity-detail">
+                                                <small>Steps</small>
+                                                <strong>{activity.stepCount}</strong>
+                                            </div>
+                                        )}
                                         <div className="activity-detail">
                                             <small>Time</small>
                                             <strong>{calculateDuration(activity.startTime, activity.endTime)}</strong>

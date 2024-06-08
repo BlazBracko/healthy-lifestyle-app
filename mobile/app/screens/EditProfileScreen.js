@@ -23,7 +23,7 @@ const EditProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-            axios.get(`https://c6ea-164-8-222-67.ngrok-free.app/users/${user.id}`, { timeout: 5000 })
+            axios.get(`https://mallard-set-akita.ngrok-free.app/users/${user.id}`, { timeout: 5000 })
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -49,7 +49,7 @@ const EditProfileScreen = () => {
 
     const handleSubmit = async () => {
         try {
-            const res = await axios.put(`https://c6ea-164-8-222-67.ngrok-free.app/users/${user.id}`, profile, { timeout: 5000 });
+            const res = await axios.put(`https://mallard-set-akita.ngrok-free.app/users/${user.id}`, profile, { timeout: 5000 });
             route.params.onGoBack();
             navigation.navigate('Profile');
         } catch (error) {

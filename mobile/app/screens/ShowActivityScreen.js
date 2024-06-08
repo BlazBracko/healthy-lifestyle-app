@@ -14,7 +14,7 @@ const ShowActivityScreen = () => {
 
     useEffect(() => {
         if (user && activityId) {
-            axios.get(`http://164.8.206.104:3001/activities/${activityId}`)
+            axios.get(`https://mallard-set-akita.ngrok-free.app/activities/${activityId}`)
                 .then(response => {
                     console.log('Activity data:', response.data); 
                     setActivity(response.data);

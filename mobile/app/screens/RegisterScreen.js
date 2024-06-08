@@ -44,7 +44,7 @@ const RegisterScreen = () => {
         }
 
         try {
-            const response = await fetch('http://164.8.206.104:3001/users/register', {
+            const response = await fetch('https://mallard-set-akita.ngrok-free.app/users/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

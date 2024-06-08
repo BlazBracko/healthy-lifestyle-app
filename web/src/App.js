@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import Header from "./components/Header";
 import Weather from './components/Weather';
 import Logout from './components/Logout';
@@ -23,7 +22,6 @@ function App() {
           <Route path="/activity/:activityId" element={<Activity />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/editprofile" element={<EditProfile />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/scrape-weather" element={<Weather />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/myactivities" element={<MyActivities/>} />

@@ -20,7 +20,7 @@ const ActivityTracking = ({ route }) => {
         setCaloriesBurned(0);
 
         const sendLocationData = async (latitude, longitude, altitude) => {
-            await fetch("http://164.8.206.104:3001/activities/update", {
+            await fetch("https://mallard-set-akita.ngrok-free.app/activities/update", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ const ActivityTracking = ({ route }) => {
 
     const handleEndActivity = async () => {
         const endTime = new Date();
-        await fetch("http://164.8.206.104:3001/activities/end", {
+        await fetch("https://mallard-set-akita.ngrok-free.app/activities/end", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ const ActivityTracking = ({ route }) => {
     };
 
     const handleCancelActivity = async () => {
-        const url = `http://164.8.206.104:3001/activities/${activityId}`;
+        const url = `https://mallard-set-akita.ngrok-free.app/activities/${activityId}`;
         try {
             const response = await fetch(url, {
                 method: 'DELETE',

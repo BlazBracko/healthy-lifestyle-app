@@ -12,11 +12,10 @@ router.get('/:id', activityController.getActivityById);
 // Pridobi vse aktivnosti
 router.get('/', activityController.getAllActivities);
 
-// Dodaj novo aktivnost
-router.post('/', activityController.createActivity);
-
 router.post('/update', activityController.updateActivityData);
 router.post('/end', activityController.endActivity);
+// Dodaj novo aktivnost
+router.post('/', activityController.createActivity);
 
 
 // Posodobi obstoječo aktivnost

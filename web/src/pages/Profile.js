@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { UserContext } from "../userContext";
 import './Profile.css'; 
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -22,7 +22,7 @@ function Profile() {
     });
     const [activities, setActivities] = useState([]);
     const [errors, setErrors] = useState('');
-    const navigate = useNavigate(); // Uporabimo useNavigate
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (user) {
@@ -62,7 +62,6 @@ function Profile() {
         const weekAgo = new Date(today);
         weekAgo.setDate(today.getDate() - 7);
 
-        // Filtriramo aktivnosti, ki so se zgodile v zadnjem tednu.
         const filteredActivities = activities.filter(activity => {
             const activityDate = new Date(activity.startTime);
             return activityDate >= weekAgo && activityDate <= today;
@@ -75,7 +74,7 @@ function Profile() {
         for (let i = 0; i < 7; i++) {
             const date = new Date(weekAgo);
             date.setDate(weekAgo.getDate() + i);
-            labels.push(date.toLocaleDateString());
+            labels.push(date.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }));
 
             const dailyActivities = filteredActivities.filter(activity => {
                 const activityDate = new Date(activity.startTime);
@@ -84,7 +83,6 @@ function Profile() {
 
             const dailySteps = dailyActivities.reduce((total, activity) => total + activity.stepCount, 0);
             const dailyDistance = dailyActivities.reduce((total, activity) => total + activity.distance, 0);
-            // Calculate daily altitude change
             const dailyAltitudeChange = dailyActivities.reduce((total, activity) => {
                 let altitudeChange = 0;
                 const altitudeChanges = activity.altitudeChanges;
@@ -106,10 +104,11 @@ function Profile() {
                 labels,
                 datasets: [
                     {
-                        label: 'Steps in Last 7 Days',
+                        label: 'Steps',
                         data: stepsData,
                         borderColor: '#2d53bd',
-                        backgroundColor: '#2d53bd',
+                        backgroundColor: 'rgba(45, 83, 189)',
+                        type: 'bar'
                     }
                 ]
             },
@@ -117,10 +116,12 @@ function Profile() {
                 labels,
                 datasets: [
                     {
-                        label: 'Distance in Last 7 Days (km)',
+                        label: 'Distance',
                         data: distanceData,
-                        borderColor: '#ff6347',
-                        backgroundColor: '#ff6347',
+                        borderColor: 'rgba(252, 3, 161)',
+                        backgroundColor: 'rgba(252, 3, 161)',
+                        fill: false,
+                        tension: 0.4,
                     }
                 ]
             },
@@ -128,10 +129,15 @@ function Profile() {
                 labels,
                 datasets: [
                     {
-                        label: 'Altitude change in Last 7 Days (m)',
+                        label: 'Altitude change',
                         data: altitudeData,
-                        borderColor: '#32a852',
-                        backgroundColor: '#32a852',
+                        borderColor: 'rgba(250, 140, 50)',
+                        backgroundColor: 'rgba(250, 140, 50, 0.2)',  // More transparent
+                        fill: true,
+                        pointBackgroundColor: 'rgba(250, 140, 50)',
+                        pointBorderColor: 'rgba(250, 140, 50)',
+                        pointRadius: 5,
+                        tension: 0.4,
                     }
                 ]
             }
@@ -139,6 +145,90 @@ function Profile() {
     };
 
     const activityData = getActivityDataForLastWeek();
+
+    const options = {
+        steps: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Steps in Last 7 Days',
+                    font: {
+                        size: 18
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return new Date(value).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Steps'
+                    }
+                }
+            }
+        },
+        distance: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Distance in Last 7 Days',
+                    font: {
+                        size: 18
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return new Date(value).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Distance (km)'
+                    }
+                }
+            }
+        },
+        altitude: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Altitude Change in Last 7 Days',
+                    font: {
+                        size: 18
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return new Date(value).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Altitude Change (m)'
+                    }
+                }
+            }
+        }
+    };
 
     if (!user) return <p>Please login to view this page.</p>;
 
@@ -160,10 +250,9 @@ function Profile() {
             </div>
             <div className="activity-chart-container">
                 <h2>Activity in Last 7 Days</h2>
-                {/*Line komponenta iz react-chartjs-2 sprejme podatke preko data propa. Ti podatki so vrnjeni iz funkcije getActivityDataForLastWeek*/}
-                <Line data={activityData.distance} />
-                <Line data={activityData.steps} />
-                <Line data={activityData.altitude} />
+                <Bar data={activityData.steps} options={options.steps} />
+                <Line data={activityData.distance} options={options.distance} />
+                <Line data={activityData.altitude} options={options.altitude} />
             </div>
             {errors && <p className="error-message">{errors}</p>}
         </div>
