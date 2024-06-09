@@ -16,7 +16,7 @@ function Home() {
             axios.get(`http://localhost:3001/activities`)
             .then(response => {
               // Filtriramo aktivnosti, da odstranimo aktivnosti trenutnega uporabnika
-              const filteredActivities = response.data.filter(activity => activity.userID._id !== user.id);
+              const filteredActivities = response.data.filter(activity => activity.userID._id !== user._id);
 
             // Nato razvrstimo filtrirane aktivnosti po datumu začetka od najnovejše do najstarejše
             const sortedActivities = filteredActivities.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
