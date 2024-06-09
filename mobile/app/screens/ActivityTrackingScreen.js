@@ -4,6 +4,30 @@ import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { Pedometer } from 'expo-sensors';
 import MapView, { Circle } from 'react-native-maps';
+import * as TaskManager from 'expo-task-manager';
+import * as BackgroundFetch from 'expo-background-fetch';
+
+const TASK_NAME = 'background-update-time';
+
+const defineBackgroundTask = () => {
+    TaskManager.defineTask(TASK_NAME, async () => {
+        // Task definition logic
+        console.log('Background task executed');
+        return BackgroundFetch.Result.NewData;
+    });
+};
+
+const registerBackgroundFetch = async () => {
+    return BackgroundFetch.registerTaskAsync(TASK_NAME, {
+        minimumInterval: 60, // 1 minute
+        stopOnTerminate: false,
+        startOnBoot: true,
+    });
+};
+
+const unregisterBackgroundFetch = async () => {
+    return BackgroundFetch.unregisterTaskAsync(TASK_NAME);
+};
 
 const ActivityTracking = ({ route }) => {
     const { activityType, startTime, activityId } = route.params;
@@ -15,11 +39,14 @@ const ActivityTracking = ({ route }) => {
     const navigation = useNavigation();
 
     useEffect(() => {
-        setElapsedTime(0); // Reset timer when component mounts
+        defineBackgroundTask();
+        registerBackgroundFetch();
+
+        setElapsedTime(0);
         setStepCount(0);
         setCaloriesBurned(0);
 
-        const sendLocationData = async (latitude, longitude, altitude) => {
+        const sendActivityData = async (latitude, longitude, altitude, stepCount, caloriesBurned) => {
             await fetch("https://mallard-set-akita.ngrok-free.app/activities/update", {
                 method: 'POST',
                 headers: {
@@ -30,6 +57,8 @@ const ActivityTracking = ({ route }) => {
                     latitude,
                     longitude,
                     altitude,
+                    stepCount,
+                    caloriesBurned,
                 }),
             });
         };
@@ -49,7 +78,7 @@ const ActivityTracking = ({ route }) => {
             }, (pos) => {
                 const { latitude, longitude, altitude } = pos.coords;
                 setPosition({ latitude, longitude, altitude });
-                sendLocationData(latitude, longitude, altitude);
+                sendActivityData(latitude, longitude, altitude, stepCount, caloriesBurned);
 
                 if (mapRef.current) {
                     mapRef.current.animateToRegion({
@@ -57,7 +86,7 @@ const ActivityTracking = ({ route }) => {
                         longitude,
                         latitudeDelta: 0.002,
                         longitudeDelta: 0.002,
-                    }, 1000); // animate to region over 1 second
+                    }, 1000);
                 }
             });
         })();
@@ -80,6 +109,7 @@ const ActivityTracking = ({ route }) => {
 
         return () => {
             locationSubscriber && locationSubscriber.remove();
+            unregisterBackgroundFetch();
         };
 
     }, [activityType]);
@@ -185,16 +215,6 @@ const ActivityTracking = ({ route }) => {
                 <Text style={styles.activityType}>Tracking {activityType}</Text>
                 <Text style={styles.time}>Activity started at: {new Date(startTime).toLocaleTimeString()}</Text>
                 <Text style={styles.timer}>Time: {formatTime(elapsedTime)}</Text>
-                <View style={styles.statsContainer}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{stepCount}</Text>
-                        <Text style={styles.statLabel}>Steps</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{caloriesBurned}</Text>
-                        <Text style={styles.statLabel}>Calories</Text>
-                    </View>
-                </View>
             </View>
             <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.button} onPress={handleEndActivity}>
@@ -247,23 +267,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginVertical: 10,
     },
-    statsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '80%',
-        marginTop: 20,
-    },
-    statItem: {
-        alignItems: 'center',
-    },
-    statValue: {
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
-    statLabel: {
-        fontSize: 16,
-        color: '#666',
-    },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -275,14 +278,14 @@ const styles = StyleSheet.create({
     button: {
         flex: 1,
         marginHorizontal: 10,
-        backgroundColor: '#4A90E2', // Light blue for the finish button
+        backgroundColor: '#4A90E2',
         padding: 15,
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
     },
     cancelButton: {
-        backgroundColor: '#003f7f', // Darker blue for the cancel button
+        backgroundColor: '#003f7f',
     },
     buttonText: {
         color: '#fff',

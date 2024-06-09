@@ -59,6 +59,7 @@ export default function App() {
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
       console.warn("delojepacdelo");
       const { data } = response.notification.request.content;
+      console.log(data.url)
       if (data.url) {
           Linking.openURL(data.url); // This will trigger the navigation based on your linking config
       }

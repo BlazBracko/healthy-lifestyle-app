@@ -23,7 +23,7 @@ const EditProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-            axios.get(`https://mallard-set-akita.ngrok-free.app/users/${user.id}`, { timeout: 5000 })
+            axios.get(`https://mallard-set-akita.ngrok-free.app/users/${user._id}`, { timeout: 5000 })
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({

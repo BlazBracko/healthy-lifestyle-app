@@ -2,13 +2,12 @@ import React, { useRef, useState, useEffect, useContext } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Camera } from 'expo-camera/legacy';
 import { UserContext } from '../context/userContext';
-import axios from 'axios';
 
 const FaceIdScreen = () => {
+  const { user } = useContext(UserContext);
   const cameraRef = useRef(null);
   const [hasPermission, setHasPermission] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
-  const { user } = useContext(UserContext);
 
   useEffect(() => {
     console.log(Camera);

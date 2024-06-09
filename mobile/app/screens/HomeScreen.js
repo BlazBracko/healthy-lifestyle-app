@@ -15,12 +15,18 @@ const HomeScreen = () => {
     const fetchActivities = async () => {
         if (user) {
             try {
-                const response = await axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user.id}`);
+                console.log(user._id);
+                const response = await axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user._id}`);
                 
                 const sortedActivities = response.data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
                 setActivities(sortedActivities);
+                setError('');
             } catch (error) {
-                setError('Failed to fetch activities');
+                if (error.response && error.response.status === 500) {
+                    setError('No activities found.');
+                } else {
+                    setError('Error fetching activities');
+                }
                 console.error('Error fetching activities:', error);
             }
         }
