@@ -15,5 +15,8 @@ COPY . .
 # Sestavimo projekt
 RUN npm run build
 
+# Izpostavimo vrata, na katerih aplikacija teče
+EXPOSE 3000
+
 # Ukaz za zagon aplikacije 
 CMD ["npm", "start"]
