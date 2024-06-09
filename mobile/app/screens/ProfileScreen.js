@@ -31,7 +31,8 @@ const ProfileScreen = () => {
 
     const refreshProfile = () => {
         if (user) {
-            axios.get(`https://mallard-set-akita.ngrok-free.app/users/${user.id}`)
+            console.log(user._id);
+            axios.get(`https://mallard-set-akita.ngrok-free.app/users/${user._id}`)
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -51,7 +52,7 @@ const ProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-            axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user.id}`)
+            axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user._id}`)
                 .then(response => {
                     setActivities(response.data);
                 })
@@ -99,9 +100,9 @@ const ProfileScreen = () => {
                 return total + altitudeChange;
             }, 0);
 
-            stepsData.push(dailySteps);
-            distanceData.push(parseFloat(dailyDistance.toFixed(2)));
-            altitudeData.push(dailyAltitudeChange);
+            stepsData.push(isNaN(dailySteps) ? 0 : dailySteps);
+            distanceData.push(isNaN(dailyDistance) ? 0 : parseFloat(dailyDistance.toFixed(2)));
+            altitudeData.push(isNaN(dailyAltitudeChange) ? 0 : dailyAltitudeChange);
         }
 
         return {

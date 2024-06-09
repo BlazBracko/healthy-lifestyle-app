@@ -30,9 +30,19 @@ const RegisterScreen = () => {
         return token;
     }
 
+    const validateEmail = (email) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    };
+
     const handleRegister = async () => {
         if (!username || !email || !name || !surname || !password) {
             Alert.alert("Please fill all fields");
+            return;
+        }
+
+        if (!validateEmail(email)) {
+            Alert.alert("Invalid Email", "Please enter a valid email address");
             return;
         }
         
@@ -55,12 +65,12 @@ const RegisterScreen = () => {
 
             if (response.status === 201) {
                 Alert.alert("Success", "You have registered successfully!");
-                /*setUsername('');
+                setUsername('');
                 setEmail('');
                 setName('');
                 setSurname('');
                 setPassword('');
-                setError(''); */
+                setError('');
                 if(jsonData.newUser) {
                     login(jsonData.newUser);
                     navigation.navigate("FaceIdVideo");
