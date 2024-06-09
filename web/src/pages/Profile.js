@@ -26,7 +26,7 @@ function Profile() {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://localhost:3001/users/${user.id}`)
+            axios.get(`http://localhost:3001/users/${user._id}`)
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -46,7 +46,7 @@ function Profile() {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://localhost:3001/activities/user/${user.id}`)
+            axios.get(`http://localhost:3001/activities/user/${user._id}`)
                 .then(response => {
                     setActivities(response.data);
                 })
