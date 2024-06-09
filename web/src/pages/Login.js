@@ -23,6 +23,7 @@ function Login() {
         if (res.status === 200) { 
             if (data.user) { // Preverimo, če odgovor vsebuje podatke uporabnika
                 setUserContext(data.user); // Nastavite uporabnika v kontekstu
+                await sendNotification(data.user._id);
             }
         } else {
             setUsername("");
@@ -33,6 +34,22 @@ function Login() {
             } else {
                 setError("An unknown error occurred");
             }
+        }
+    }
+
+    async function sendNotification(userId) {
+        try {
+            const response = await fetch(`http://localhost:3001/users/notif/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (response.ok) {
+                console.log('Notification sent successfully');
+            } else {
+                console.error('Failed to send notification');
+            }
+        } catch (error) {
+            console.error('Error sending notification:', error);
         }
     }
 

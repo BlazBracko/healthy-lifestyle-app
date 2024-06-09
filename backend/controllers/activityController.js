@@ -23,6 +23,11 @@ exports.getUserActivities = async (req, res) => {
         } else {
             return res.status(400).json({ message: "No userId provided" });
         }
+        // Če ni najdenih aktivnosti, vrne prazen seznam
+        if (!activities || activities.length === 0) {
+            return res.status(200).json([]);
+        }
+        
         res.status(200).json(activities);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -70,19 +75,23 @@ exports.createActivity = async (req, res) => {
 };
 
 exports.updateActivityData = async (req, res) => {
-    const { activityId, latitude, longitude, altitude } = req.body;
+    const { activityId, latitude, longitude, altitude, stepCount, caloriesBurned } = req.body;
 
     try {
-        // Find the activity by ID and push new location data to the locationData array
+        // Find the activity by ID and update location data, steps, and calories
         const updatedActivity = await Activity.findByIdAndUpdate(activityId, {
             $push: {
-                locationData: { latitude, longitude }, // Add new location point
+                locationData: { latitude, longitude },
                 altitudeChanges: {
-                    time: new Date(), // Current server time
+                    time: new Date(),
                     altitude: altitude
                 }
+            },
+            $set: {
+                stepCount: stepCount,
+                caloriesBurned: caloriesBurned
             }
-        }, { new: true }); // Return the updated document
+        }, { new: true });
 
         if (!updatedActivity) {
             return res.status(404).json({ message: "Activity not found." });
@@ -93,6 +102,7 @@ exports.updateActivityData = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
 
 // Function to end an activity and update the end time
 exports.endActivity = async (req, res) => {

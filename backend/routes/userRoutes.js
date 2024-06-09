@@ -10,7 +10,7 @@ router.get('/', userController.getAllUsers);
 
 // Dodaj novega uporabnika
 router.post('/register', userController.createUser);
-router.post('/notif', userController.sendNotification);
+router.post('/notif/:id', userController.sendNotification);
 
 //Login
 router.post('/login', userController.login);
