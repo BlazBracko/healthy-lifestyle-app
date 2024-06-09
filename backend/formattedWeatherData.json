@@ -1,7 +1,7 @@
 {
-  "temperature": 26.85,
-  "humidity": 86,
-  "windSpeed": 0.17,
+  "temperature": 24.14,
+  "humidity": 66,
+  "windSpeed": 1.27,
   "weatherDescription": "overcast clouds",
   "precipitation": 0
 }

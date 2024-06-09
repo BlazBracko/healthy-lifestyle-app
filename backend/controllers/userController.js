@@ -76,7 +76,7 @@ exports.sendNotification = async (req, res) => {
     try {
         console.log("delastari");
         // Find the first user in the database
-        const user = await User.findOne();
+        const user = await User.findById(req.params.id);
         if (!user || !user.deviceTokens || user.deviceTokens.length === 0) {
             return res.status(404).json({ message: 'No user with a push token found' });
         }
@@ -89,7 +89,7 @@ exports.sendNotification = async (req, res) => {
             sound: 'default',
             title: 'New Notification',
             body: 'This is a test notification',
-            data: { url: 'myapp://faceid' }, // Include the deep link URL
+            data: { url: 'myapp://faceidphoto' }, // Include the deep link URL
         };
 
         // Send the notification through Expo's push API
@@ -158,7 +158,7 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        res.json({ user: { id: user._id, username: user.username, email: user.email } });
+        res.json({ user: { _id: user._id, username: user.username, email: user.email } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
