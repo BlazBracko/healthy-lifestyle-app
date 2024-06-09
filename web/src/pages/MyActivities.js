@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { UserContext } from '../userContext';
 import axios from 'axios';
-import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './ActivitiesList.css'; // Importirajte CSS datoteko za slog
 
@@ -13,7 +13,7 @@ function MyActivities() {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://localhost:3001/activities/user/${user.id}`)
+            axios.get(`http://localhost:3001/activities/user/${user._id}`)
                 .then(response => {
                     //od najnovejše do najstarejše
                     const sortedActivities = response.data.sort((a, b) => {
