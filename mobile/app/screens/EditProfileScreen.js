@@ -49,7 +49,7 @@ const EditProfileScreen = () => {
 
     const handleSubmit = async () => {
         try {
-            const res = await axios.put(`https://mallard-set-akita.ngrok-free.app/users/${user.id}`, profile, { timeout: 5000 });
+            const res = await axios.put(`https://mallard-set-akita.ngrok-free.app/users/${user._id}`, profile, { timeout: 5000 });
             route.params.onGoBack();
             navigation.navigate('Profile');
         } catch (error) {

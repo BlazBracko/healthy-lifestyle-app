@@ -20,7 +20,7 @@ function Profile() {
 
     useEffect(() => {
         if (user) {
-            axios.get(`http://localhost:3001/users/${user.id}`)
+            axios.get(`http://localhost:3001/users/${user._id}`)
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -48,7 +48,7 @@ function Profile() {
         
         e.preventDefault();
         try {
-            const res = await axios.put(`http://localhost:3001/users/${user.id}`, profile);
+            const res = await axios.put(`http://localhost:3001/users/${user._id}`, profile);
             alert('Profile updated successfully!');
             console.log(res.data);
 

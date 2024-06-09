@@ -34,7 +34,7 @@ const Activity = () => {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        userID: user.id,
+                        userID: user._id,
                         type: selectedValue,
                         startTime: startTime.toISOString(),
                     }),
