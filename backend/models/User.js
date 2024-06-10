@@ -20,7 +20,9 @@ const userSchema = new Schema({
     age: { type: Number, min: 0 },
     height: { type: Number, min: 0 }, // Višina telesa v centimetrih
     weight: { type: Number, min: 0 }, // Teža telesa v kilogramih
-    gender: { type: String, enum: ['male', 'female', 'other'] } // Spol
+    gender: { type: String, enum: ['male', 'female', 'other'] }, // Spol
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // References to other User documents
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 });
 
 // Metode za shemo

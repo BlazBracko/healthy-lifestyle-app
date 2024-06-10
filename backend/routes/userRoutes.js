@@ -12,6 +12,11 @@ router.get('/', userController.getAllUsers);
 router.post('/register', userController.createUser);
 router.post('/notif/:id', userController.sendNotification);
 
+// Follow userja
+// User routes
+router.get('/follow-status/:userId', userController.getUsersWithFollowStatus);
+router.post('/follow', userController.followUser);
+router.post('/unfollow', userController.unfollowUser);
 //Login
 router.post('/login', userController.login);
 

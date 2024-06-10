@@ -42,6 +42,7 @@ export default function App() {
   const navigationRef = useRef();
 
   useEffect(() => {
+
     // Ask for notification permissions on iOS and Android
     Notifications.requestPermissionsAsync().then(({ status }) => {
       if (status !== 'granted') {
@@ -57,7 +58,6 @@ export default function App() {
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.warn("delojepacdelo");
       const { data } = response.notification.request.content;
       console.log(data.url)
       if (data.url) {

@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+//const mqtt = require('mqtt');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -18,6 +19,25 @@ mongoose.connect(uri, {
 }).catch(err => {
   console.error('MongoDB connection error:', err);
 });
+
+/*
+// Initialize MQTT Client
+const client = mqtt.connect('mqtt://localhost:1883');
+
+client.on('connect', () => {
+  console.log('Connected to MQTT Broker');
+  client.subscribe('users/+/status', (err) => {
+    if (!err) {
+      console.log('Subscribed to user status topics');
+    }
+  });
+});
+
+client.on('message', (topic, message) => {
+  console.log(`Received message: ${message.toString()} on topic: ${topic}`);
+  // Example: Update user status in the database based on the message
+});
+*/
 
 // Routes
 const userRoutes = require('./routes/userRoutes');

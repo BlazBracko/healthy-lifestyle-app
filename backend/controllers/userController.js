@@ -163,3 +163,72 @@ exports.login = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+// Fetch all users with follow status
+exports.getUsersWithFollowStatus = async (req, res) => {
+    const currentUserId = req.params.userId;
+    try {
+        const users = await User.find({ _id: { $ne: currentUserId }}).lean();
+        const currentUser = await User.findById(currentUserId);
+        if (!currentUser) {
+            return res.status(404).json({ message: 'Current user not found' });
+        }
+
+        // Add isFollowed property to each user
+        const usersWithFollowStatus = users.map(user => ({
+            ...user,
+            isFollowed: currentUser.following.includes(user._id)
+        }));
+
+        res.json(usersWithFollowStatus);
+    } catch (error) {
+        console.error('Failed to fetch users:', error);
+        res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+    }
+};
+
+// Follow a user
+exports.followUser = async (req, res) => {
+    const { followerId, followingId } = req.body;
+
+    if (followerId === followingId) {
+        return res.status(400).json({ message: "Cannot follow oneself" });
+    }
+
+    try {
+        await User.updateOne(
+            { _id: followerId },
+            { $addToSet: { following: followingId } }
+        );
+        await User.updateOne(
+            { _id: followingId },
+            { $addToSet: { followers: followerId } }
+        );
+
+        res.json({ message: 'Successfully followed the user' });
+    } catch (error) {
+        console.error('Failed to follow user:', error);
+        res.status(500).json({ message: 'Failed to follow user', error: error.message });
+    }
+};
+
+// Unfollow a user
+exports.unfollowUser = async (req, res) => {
+    const { followerId, followingId } = req.body;
+
+    try {
+        await User.updateOne(
+            { _id: followerId },
+            { $pull: { following: followingId } }
+        );
+        await User.updateOne(
+            { _id: followingId },
+            { $pull: { followers: followerId } }
+        );
+
+        res.json({ message: 'Successfully unfollowed the user' });
+    } catch (error) {
+        console.error('Failed to unfollow user:', error);
+        res.status(500).json({ message: 'Failed to unfollow user', error: error.message });
+    }
+};

@@ -1,57 +1,69 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Animated } from 'react-native';
 import MapView, { Polyline } from 'react-native-maps';
 import axios from 'axios';
-import { UserContext } from '../context/userContext'; 
+import { UserContext } from '../context/userContext';
 import { useNavigation } from '@react-navigation/native';
+import { subscribeToTopic, unsubscribeFromTopic, publishMessage } from '../../services/mqttService';
 
 const HomeScreen = () => {
     const { user } = useContext(UserContext);
+    const [users, setUsers] = useState([]);
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const navigation = useNavigation();
 
+    /*
+    // Example of how to publish status updates
+    useEffect(() => {
+      console.log(user); // Check if user details are loaded
+      if (user && user.id) {
+        const statusTopic = `users/${user.id}/status`;
+        const activeStatusMessage = 'User is online';
+        publishMessage(statusTopic, activeStatusMessage);
+      }
+    }, [user]);
+    */  
+    const fetchUsers = async () => {
+      try {
+          const response = await axios.get(`http://192.168.1.220:3001/users/follow-status/${user._id}`);
+          setUsers(response.data);
+      } catch (error) {
+          console.error('Error fetching users:', error);
+          setError('Failed to fetch users');
+      }
+    };
+
     const fetchActivities = async () => {
         if (user) {
             try {
-                console.log(user._id);
-                const response = await axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user._id}`);
-                
+                const response = await axios.get(`http://192.168.1.220:3001/activities/user/${user._id}`);
                 const sortedActivities = response.data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
                 setActivities(sortedActivities);
                 setError('');
             } catch (error) {
-                if (error.response && error.response.status === 500) {
-                    setError('No activities found.');
-                } else {
-                    setError('Error fetching activities');
-                }
+                setError('Error fetching activities');
                 console.error('Error fetching activities:', error);
             }
         }
     };
 
     useEffect(() => {
+        fetchUsers();
         fetchActivities();
     }, [user]);
 
-    const onRefresh = async () => {
-        setRefreshing(true);
-        await fetchActivities();
-        setRefreshing(false);
-    };
-
     const calculateDuration = (startTime, endTime) => {
-        const start = new Date(startTime);
-        const end = new Date(endTime);
-        const duration = end - start;
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      const duration = end - start;
 
-        const hours = Math.floor(duration / (1000 * 60 * 60));
-        const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+      const hours = Math.floor(duration / (1000 * 60 * 60));
+      const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((duration % (1000 * 60)) / 1000);
 
-        return `${hours > 0 ? hours + 'h ' : ''}${minutes}min ${seconds}s`;
+      return `${hours > 0 ? hours + 'h ' : ''}${minutes}min ${seconds}s`;
     };
 
     const calculateAltitudeChange = (altitudeChanges) => {
@@ -77,15 +89,53 @@ const HomeScreen = () => {
             return `${minutes}:${seconds < 10 ? '0' : ''}${seconds} min/km`;
     };
 
+    const handleFollowToggle = async (userId, isFollowed) => {
+      try {
+          const action = isFollowed ? 'unfollow' : 'follow';
+          await axios.post(`http://192.168.1.220:3001/users/${action}`, { followerId: user._id, followingId: userId });
+          /*if (!isFollowed) {
+            const topic = `users/${userId}/status`;
+            subscribeToTopic(topic);
+            console.log(`Now following ${userId}'s status.`);
+          } else {
+            const topic = `users/${userId}/status`;
+            unsubscribeFromTopic(topic);
+            console.log(`Unfollowed ${userId}.`);
+          }*/
+          alert(`You are now ${isFollowed ? 'unfollowing' : 'following'} user ${userId}`);
+          // Update list to show current follow status
+          fetchUsers();
+      } catch (error) {
+          console.error(`Error ${isFollowed ? 'unfollowing' : 'following'} user:`, error);
+      }
+    };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await fetchUsers();
+        await fetchActivities();
+        setRefreshing(false);
+    };
+
     if (!user) return <Text style={styles.errorText}>Please login to view your activities.</Text>;
 
     return (
         <ScrollView 
             contentContainerStyle={styles.container}
-            refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
+            <Text style={styles.title}>Users</Text>
+            {users.map(userItem => (
+                <Animated.View key={userItem._id} style={styles.userItem}>
+                    <Text style={styles.userName}>{userItem.username}</Text>
+                    <TouchableOpacity 
+                        onPress={() => handleFollowToggle(userItem._id, userItem.isFollowed)}
+                        style={userItem.isFollowed ? styles.unfollowButton : styles.followButton}
+                    >
+                        <Text style={styles.buttonText}>{userItem.isFollowed ? 'Unfollow' : 'Follow'}</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            ))}
             <Text style={styles.title}>Your Activities</Text>
             {activities.length > 0 ? (
                 activities.map(activity => (
@@ -231,6 +281,41 @@ const styles = StyleSheet.create({
     detailValue: {
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    followButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 20,
+      backgroundColor: '#0a84ff',
+      borderRadius: 20,
+    },
+    unfollowButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        backgroundColor: '#ff3b30',
+        borderRadius: 20,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    userItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 10,
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      marginBottom: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    userName: {
+      fontSize: 18,
+      color: '#333',
     },
     map: {
         width: '100%',
