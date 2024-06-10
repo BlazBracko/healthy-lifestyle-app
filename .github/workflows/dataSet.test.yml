@@ -1,0 +1,38 @@
+'''
+name: DataSet Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'  
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest
+
+    - name: Run tests
+      run: |
+        pytest backend/tests/dataSet.test.py  # Specifying the path to your test file
+'''
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test1-results
+        path: tests/test1-results  
+        retention-days: 5
