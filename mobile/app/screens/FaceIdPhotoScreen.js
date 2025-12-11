@@ -1,10 +1,9 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useContext } from 'react';
-import { useState, useEffect, useRef } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import { useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { Button, StyleSheet, Text, View, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { UserContext } from '../context/userContext';
-import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE_URL } from '../config/api';
 
 const FaceIdPhotoScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -13,92 +12,91 @@ const FaceIdPhotoScreen = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [cameraReadyAt, setCameraReadyAt] = useState(0);
+  const [hasAutoCaptured, setHasAutoCaptured] = useState(false);
   const navigation = useNavigation();
 
   useEffect(() => {
-    (async () => {
-      if (!permission) {
-        const { status } = await requestPermission();
-        setHasPermission(status === 'granted');
-      } else {
-        setHasPermission(permission.granted);
-      }
-    })();
+    if (permission) {
+      setHasPermission(permission.granted);
+    } else {
+      requestPermission();
+    }
   }, [permission]);
 
-  useEffect(() => {
-    if (hasPermission) {
-      // Zamika zajema slike za 5 sekund
-      const timer = setTimeout(() => {
-        takePicture();
-      }, 5000);
+  const takePicture = useCallback(async () => {
+    if (!isCameraReady) return;
 
-      return () => clearTimeout(timer);
-    }
-  }, [hasPermission]);
+    if (!cameraRef.current || isProcessing) return;
 
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      console.log('Taking picture...');
-      let photo = await cameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
-      console.log('Picture taken:', photo);
+    setIsProcessing(true);
 
-      const data = new FormData();
-      data.append('photo', {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.5 });
+      console.log("Captured:", photo.uri);
+
+      const formData = new FormData();
+      formData.append("photo", {
         uri: photo.uri,
-        name: 'photo.jpg',
-        type: 'image/jpg'
+        name: "photo.jpg",
+        type: "image/jpeg",
       });
 
-      console.log('Sending picture to server...');
-      // Pošlji sliko na strežnik
-      axios.post(`https://mallard-set-akita.ngrok-free.app/recognize/user/${user.username}`, data)
-        .then(response => {
-          const matchFound = response.data.is_match;
-          setResponse(matchFound ? "Face match found" : "No face match found");
-          setError(null);  // Clear any previous errors
+      const response = await fetch(`${API_BASE_URL}/recognize/user/${user.username}`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
 
-          if (response.data.is_match) {
-            navigation.navigate('Home');  // Navigacija na Home stran
+      if (response.ok) {
+        const json = await response.json();
+        setResponse(json.is_match ? "Face match found" : "No face match found");
+
+        setTimeout(() => {
+          if (json.is_match) {
+            // Navigate to Home tab
+            navigation.navigate('Home');
           } else {
-            navigation.navigate('Login'); // Navigacija na Login stran
+            navigation.navigate('Login');
           }
-        })
-        .catch(error => {
-          console.error('Error sending picture:', error);
-          setError(error.message); // Shranjevanje napake v stanje
-        });
-    }
-  };
+        }, 500);
+      } else {
+        Alert.alert("Recognition Error", "Server error during recognition.");
+      }
 
-  if (!permission || !hasPermission) {
-    // Camera permissions are still loading or not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
-        {!hasPermission && <Button onPress={requestPermission} title="grant permission" />}
-      </View>
-    );
-  }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isCameraReady, isProcessing]);
 
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} ref={cameraRef} facing="front">
-        <View style={styles.buttonContainer}>
-          {/* Prikaz JSON odgovora */}
-          {response && (
-            <View style={styles.responseContainer}>
-              <Text style={styles.text}>Response:</Text>
-              <Text style={styles.text}>{JSON.stringify(response, null, 2)}</Text>
-            </View>
-          )}
-          {/* Prikaz napake */}
-          {error && (
-            <View style={styles.responseContainer}>
-              <Text style={styles.text}>Error:</Text>
-              <Text style={styles.text}>{error}</Text>
-            </View>
-          )}
+      <CameraView
+        style={styles.camera}
+        ref={cameraRef}
+        facing="front"
+        onCameraReady={() => {
+          console.log("CAMERA READY");
+          setIsCameraReady(true);
+          setCameraReadyAt(Date.now());
+        }}
+      >
+        <View style={styles.overlay}>
+          <TouchableOpacity
+            style={[styles.button, (!isCameraReady || isProcessing) && styles.buttonDisabled]}
+            onPress={takePicture}
+          >
+            <Text style={styles.buttonText}>
+              {!isCameraReady ? "Loading Camera..." : "Take Photo"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </CameraView>
     </View>
@@ -106,31 +104,22 @@ const FaceIdPhotoScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  camera: { flex: 1 },
+  overlay: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: 40,
   },
-  camera: {
-    flex: 1,
+  button: {
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 30,
   },
-  buttonContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    margin: 64,
-  },
-  responseContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 10,
-  },
-  text: {
-    fontSize: 18,
-    color: 'white',
-  },
+  buttonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  buttonDisabled: { opacity: 0.4 },
 });
 
 export default FaceIdPhotoScreen;

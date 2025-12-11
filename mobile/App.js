@@ -9,7 +9,8 @@ import ActivityScreen from './app/screens/ActivityScreen';
 import ActivityTrackingScreen from './app/screens/ActivityTrackingScreen'; 
 import RegisterScreen from './app/screens/RegisterScreen';
 import ShowActivity from './app/screens/ShowActivityScreen';
-import { UserProvider } from './src/context/UserContext'; 
+import LoginScreen from './app/screens/LoginScreen';
+import { UserProvider } from './app/context/userContext'; 
 import * as Linking from 'expo-linking';
 
 const Stack = createNativeStackNavigator();
@@ -81,12 +82,12 @@ export default function App() {
         <Stack.Navigator initialRouteName="Home">
           <Stack.Screen name="Home" component={HomeScreen}  options={{ title: 'Home' }}/>
           <Stack.Screen name="FaceIdVideo" component={FaceIdScreen}  options={{ title: 'FaceIdVideo' }}/>
-          <Stack.Screen name="FaceIdPhoto" component={FaceIdPhotoScreen}  options={{ title: 'FaceIdPhoto' }}/>
-          <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
+          <Stack.Screen name="FaceIdPhoto" component={FaceIdPhotoScreen}  options={{ headerShown: false }}/>
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Register' }} />
           <Stack.Screen name="Activity" component={ActivityScreen} options={{ title: 'Activity' }} />
           <Stack.Screen name="ActivityTracking" component={ActivityTrackingScreen} options={{ title: 'ActivityTracking' }} />
-          <Stack.Screen name="ShowActivity" component={ShowActivity} options={{ title: 'ShowActivity' }} />
+          <Stack.Screen name="ShowActivity" component={ShowActivity} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
     </UserProvider>
