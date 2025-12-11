@@ -34,11 +34,26 @@ def load_and_preprocess_image(image_path):
 
 # Preveri nove slike v mapi uploads
 def recognize_faces(uploads_dir, model, confidence_threshold=0.50):
-    files = os.listdir(uploads_dir)
+    # Preveri, ali mapa obstaja
+    if not os.path.exists(uploads_dir):
+        print(f"Error: Directory {uploads_dir} does not exist", file=sys.stderr)
+        return False, []
+    
+    try:
+        files = os.listdir(uploads_dir)
+    except OSError as e:
+        print(f"Error listing directory {uploads_dir}: {e}", file=sys.stderr)
+        return False, []
+    
     results = []
     for filename in files:
         if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
             img_path = os.path.join(uploads_dir, filename)
+            # Preveri, ali datoteka obstaja
+            if not os.path.exists(img_path):
+                print(f"Warning: File {img_path} does not exist", file=sys.stderr)
+                continue
+                
             image = load_and_preprocess_image(img_path)
             if image is not None:
                 image = np.expand_dims(image, axis=0)  # Dodaj batch dimension
@@ -56,11 +71,15 @@ def recognize_faces(uploads_dir, model, confidence_threshold=0.50):
 def main():
     # Settings
     username = sys.argv[1]
-    model_path = 'learned_model/' + username + '/face_recognition_model.keras'
+    model_path = os.path.join('learned_model', username, 'face_recognition_model.keras')
     uploads_dir = 'login-photo'
 
-    # Load the trained model
-    model = load_model(model_path)
+    # Load the trained model without compilation (to avoid optimizer compatibility issues)
+    # For inference, we don't need the optimizer, only the weights
+    model = load_model(model_path, compile=False)
+    
+    # Model weights are already loaded, no need to compile for inference
+    # The model can make predictions without compilation
 
     # Run face recognition
     is_match, results = recognize_faces(uploads_dir, model)

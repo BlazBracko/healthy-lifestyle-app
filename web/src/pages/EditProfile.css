@@ -1,52 +1,184 @@
-.form-container {
-    padding: 20px;
-    padding-right: 42px;
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+/* Modern Edit Profile Page */
+.edit-profile-container {
+    min-height: calc(100vh - 76px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
 }
 
-.form-container h1 {
+.edit-profile-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 600px;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.edit-profile-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.edit-profile-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.edit-profile-subtitle {
+    font-size: 15px;
+    color: #718096;
     margin: 0;
-    margin-bottom: 20px;
-    color: rgb(52, 94, 184);
+    font-weight: 400;
+}
+
+.edit-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
 .form-field {
-    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .form-field label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 4px;
 }
 
 .form-input,
 .form-select {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    background: #ffffff;
+    color: #1a202c;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-input::placeholder {
+    color: #a0aec0;
+}
+
+.form-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
 }
 
 .form-button {
-    background-color: rgb(52, 94, 184);
-    color: white;
-    padding: 10px 20px;
+    width: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 16px 24px;
+    border-radius: 12px;
+    color: #ffffff;
+    text-align: center;
     border: none;
-    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .form-button:hover {
-    background-color: rgb(16, 45, 108);
+    background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.form-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .error-message {
-    color: red;
-    margin-top: 10px;
+    background: #fed7d7;
+    color: #c53030;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-top: 8px;
+    text-align: center;
+    border: 1px solid #fc8181;
+}
+
+.success-message {
+    background: #c6f6d5;
+    color: #22543d;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-top: 8px;
+    text-align: center;
+    border: 1px solid #9ae6b4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .edit-profile-card {
+        padding: 32px 24px;
+    }
+    
+    .edit-profile-title {
+        font-size: 28px;
+    }
+    
+    .edit-profile-form {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-profile-container {
+        padding: 24px 16px;
+    }
+    
+    .edit-profile-card {
+        padding: 24px 20px;
+    }
+    
+    .edit-profile-title {
+        font-size: 24px;
+    }
 }

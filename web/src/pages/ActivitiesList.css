@@ -1,76 +1,235 @@
+/* Modern Activities List */
 .main-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    min-height: calc(100vh - 76px);
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .activities-container {
-    padding-top: 10px;
-    width: 40%;
-     /* Dodatna senca za boljši izgled */
-    border-radius: 10px;
-    
+    width: 100%;
 }
 
-.activities-container p{
-    color: #2d53bd;
-    margin-left: 20px;
-}
-.activities-list {
-    list-style: none;
-    padding: 0;
-}
-
-.activity-item {
-    padding: 20px;
-    margin-top: 20px;
-    background-color: #f8faff;
-    border-radius: 20px;
-}
-
-.activity-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.activity-header strong {
-    font-size: 1.8em;
-}
-
-.activity-date {
-    color: #888;
-}
-
-.activity-details {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.activity-detail {
-    flex: 1;
+.activities-container > p {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 32px 0;
+    letter-spacing: -0.02em;
     text-align: center;
 }
 
-.activity-detail small {
-    display: block;
-    color: #666;
+.activities-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 24px;
 }
 
-.activity-detail strong {
-    display: block;
-    font-size: 1.1em;
+.activity-item {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
-.map-container {
-    height: 200px;
-    margin-top: 10px;
+.activity-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
 }
 
 .activity-link {
     text-decoration: none;
     color: inherit;
     display: block;
+}
+
+.user-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-name::before {
+    content: '👤';
+    font-size: 20px;
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f7fafc;
+}
+
+.activity-header strong {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a202c;
+    text-transform: capitalize;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.activity-header strong::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.activity-date {
+    color: #718096;
+    font-size: 14px;
+    font-weight: 500;
+    background: #f7fafc;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+.activity-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.activity-detail {
+    text-align: center;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.activity-detail:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    transform: scale(1.02);
+}
+
+.activity-detail small {
+    display: block;
+    color: #718096;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.activity-detail strong {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-top: 4px;
+}
+
+.map-container {
+    height: 240px;
+    margin-top: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Activity type specific colors */
+.activity-item[data-type="run"] .activity-header strong::before {
+    background: #ef4444;
+}
+
+.activity-item[data-type="walk"] .activity-header strong::before {
+    background: #10b981;
+}
+
+.activity-item[data-type="cycle"] .activity-header strong::before {
+    background: #3b82f6;
+}
+
+.activity-item[data-type="hike"] .activity-header strong::before {
+    background: #f59e0b;
+}
+
+/* Fallback for activities without data-type */
+.activity-item .activity-header strong::before {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Empty state - only apply to error messages, not the title */
+.activities-container > p:not(:first-child) {
+    text-align: center;
+    color: #718096;
+    font-size: 18px;
+    font-weight: 500;
+    padding: 60px 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-top: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-container {
+        padding: 24px 16px;
+    }
+    
+    .activities-container > p {
+        font-size: 24px;
+        margin-bottom: 24px;
+    }
+    
+    .activity-item {
+        padding: 20px;
+    }
+    
+    .activity-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .activity-header strong {
+        font-size: 20px;
+    }
+    
+    .activity-details {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .activity-detail {
+        padding: 12px;
+    }
+    
+    .activity-detail strong {
+        font-size: 16px;
+    }
+    
+    .map-container {
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .activity-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .activity-header strong {
+        font-size: 18px;
+    }
 }

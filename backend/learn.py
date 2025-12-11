@@ -1,3 +1,5 @@
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 import os
 import sys
 import io
@@ -16,7 +18,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
 
 # Pot do slikovne mape
 username = sys.argv[1]
-data_dir = 'learnPhotos\\' + username
+data_dir = os.path.join('learnPhotos', username)
 img_size = (224, 224)  # MobileNetV2 pričakuje vhodne slike velikosti 224x224
 batch_size = 32
 
@@ -109,7 +111,7 @@ print("Učenje modela...")
 history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, batch_size=batch_size, verbose=1)
 
 # Preveri in ustvari mapo learned_model
-learned_model_dir = 'learned_model\\' + username + '\\'
+learned_model_dir = os.path.join('learned_model', username)
 if not os.path.exists(learned_model_dir):
     os.makedirs(learned_model_dir)
 

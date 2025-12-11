@@ -26,9 +26,12 @@ function Activity() {
     }, [user, activityId]); // Dodajte activityId kot odvisnost za useEffect
 
     const calculateDuration = (startTime, endTime) => {
+        if (!startTime || !endTime) return 'N/A';
         const start = new Date(startTime);
         const end = new Date(endTime);
         const duration = end - start;
+
+        if (isNaN(duration) || duration < 0) return 'N/A';
 
         const hours = Math.floor(duration / (1000 * 60 * 60));
         const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
@@ -48,12 +51,12 @@ function Activity() {
     };
 
     const calculateSpeed = (distance, duration) => {
-        if (duration === 0) return 0;
+        if (!distance || distance === 0 || duration === 0) return '0.00';
         return (distance / (duration / 3600000)).toFixed(2); // vrne hitrost v km/h
     };
 
     const calculatePace = (distance, duration) => {
-        if (distance === 0) return '0:00 min/km';
+        if (!distance || distance === 0 || !duration || duration === 0) return '0:00 min/km';
         const pace = duration / distance;
         const minutes = Math.floor(pace / 60000);
         const seconds = Math.floor((pace % 60000) / 1000);
@@ -79,13 +82,13 @@ function Activity() {
                             </div>
                             <div className="activity-info">
                                 <small>Distance</small>
-                                <strong>{activity.distance.toFixed(2)} km</strong>
+                                <strong>{activity.distance ? activity.distance.toFixed(2) : 'N/A'} km</strong>
                             </div>
                         </div>
                         <div className="activity-info-column">
                             <div className="activity-info">
                                 <small>Calories Burned</small>
-                                <strong>{activity.caloriesBurned}</strong>
+                                <strong>{activity.caloriesBurned ?? 'N/A'}</strong>
                             </div>
                             <div className="activity-info">
                                 <small>Altitude change</small>
@@ -96,19 +99,23 @@ function Activity() {
                         {activity.type !== 'Cycle' && (
                             <div className="activity-info">
                                 <small>Steps Count</small>
-                                <strong>{activity.stepCount}</strong>
+                                <strong>{activity.stepCount ?? 'N/A'}</strong>
                             </div>
                         )}
                         {activity.type === 'Cycle' && (
                             <div className="activity-info">
                                 <small>Average speed</small>
-                                <strong>{calculateSpeed(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))} km/h</strong>
+                                <strong>{activity.distance && activity.endTime && activity.startTime 
+                                    ? `${calculateSpeed(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))} km/h`
+                                    : 'N/A'}</strong>
                             </div>
                         )}
                         {activity.type === 'Run' && (
                             <div className="activity-info">
                                 <small>Average pace</small>
-                                <strong>{calculatePace(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))} </strong>
+                                <strong>{activity.distance && activity.endTime && activity.startTime 
+                                    ? calculatePace(activity.distance, new Date(activity.endTime) - new Date(activity.startTime))
+                                    : 'N/A'}</strong>
                             </div>
                         )}
                         </div>

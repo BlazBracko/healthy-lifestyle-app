@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useColorScheme, StatusBar, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { UserContext } from '../context/userContext';
 import { useNavigation } from '@react-navigation/native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { API_BASE_URL } from '../config/api';
+import { Colors } from '@/constants/Colors';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -23,7 +26,10 @@ const ProfileScreen = () => {
     });
     const [activities, setActivities] = useState([]);
     const [errors, setErrors] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
     const navigation = useNavigation();
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
 
     useEffect(() => {
         refreshProfile();
@@ -31,8 +37,7 @@ const ProfileScreen = () => {
 
     const refreshProfile = () => {
         if (user) {
-            console.log(user._id);
-            axios.get(`https://mallard-set-akita.ngrok-free.app/users/${user._id}`)
+            axios.get(`${API_BASE_URL}/users/${user._id}`)
                 .then(response => {
                     const fetchedProfile = response.data;
                     setProfile({
@@ -50,18 +55,39 @@ const ProfileScreen = () => {
         }
     };
 
-    useEffect(() => {
+    const fetchActivities = async () => {
         if (user) {
-            axios.get(`https://mallard-set-akita.ngrok-free.app/activities/user/${user._id}`)
-                .then(response => {
-                    setActivities(response.data);
-                })
-                .catch(error => {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/activities/user/${user._id}`);
+                // Preveri, ali je response.data array
+                const activitiesData = Array.isArray(response.data) ? response.data : [];
+                setActivities(activitiesData);
+                setErrors('');
+            } catch (error) {
+                // Če je 404 ali prazen seznam, nastavi prazen array namesto errorja
+                if (error.response && error.response.status === 404) {
+                    setActivities([]);
+                    setErrors('');
+                } else {
                     setErrors('Failed to fetch activities');
                     console.error('Error fetching activities:', error);
-                });
+                    // Nastavi prazen array, da aplikacija ne crasne
+                    setActivities([]);
+                }
+            }
         }
+    };
+
+    useEffect(() => {
+        fetchActivities();
     }, [user]);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await refreshProfile();
+        await fetchActivities();
+        setRefreshing(false);
+    };
 
     const getActivityDataForLastWeek = () => {
         const today = new Date();
@@ -87,8 +113,8 @@ const ProfileScreen = () => {
                 return activityDate.toLocaleDateString() === date.toLocaleDateString();
             });
 
-            const dailySteps = dailyActivities.reduce((total, activity) => total + activity.stepCount, 0);
-            const dailyDistance = dailyActivities.reduce((total, activity) => total + activity.distance, 0);
+            const dailySteps = dailyActivities.reduce((total, activity) => total + (activity.stepCount || 0), 0);
+            const dailyDistance = dailyActivities.reduce((total, activity) => total + (activity.distance || 0), 0);
             const dailyAltitudeChange = dailyActivities.reduce((total, activity) => {
                 let altitudeChange = 0;
                 const altitudeChanges = activity.altitudeChanges;
@@ -112,8 +138,8 @@ const ProfileScreen = () => {
                     {
                         label: 'Steps',
                         data: stepsData,
-                        color: (opacity = 1) => `rgba(45, 83, 189, ${opacity})`, // optional
-                        strokeWidth: 2 // optional
+                        color: (opacity = 1) => `rgba(102, 126, 234, ${opacity})`,
+                        strokeWidth: 2
                     }
                 ]
             },
@@ -123,8 +149,8 @@ const ProfileScreen = () => {
                     {
                         label: 'Distance',
                         data: distanceData,
-                        color: (opacity = 1) => `rgba(252, 3, 161, ${opacity})`, // optional
-                        strokeWidth: 2 // optional
+                        color: (opacity = 1) => `rgba(118, 75, 162, ${opacity})`,
+                        strokeWidth: 2
                     }
                 ]
             },
@@ -134,8 +160,8 @@ const ProfileScreen = () => {
                     {
                         label: 'Altitude change',
                         data: altitudeData,
-                        color: (opacity = 1) => `rgba(250, 140, 50, ${opacity})`, // optional
-                        strokeWidth: 2 // optional
+                        color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
+                        strokeWidth: 2
                     }
                 ]
             }
@@ -144,184 +170,283 @@ const ProfileScreen = () => {
 
     const activityData = getActivityDataForLastWeek();
 
-    if (!user) return <Text style={styles.loginMessage}>Please login to view this page.</Text>;
+    if (!user) return <Text style={[styles.loginMessage, { color: theme.error }]}>Please login to view this page.</Text>;
+
+    const chartConfig = {
+        backgroundColor: theme.cardBackground,
+        backgroundGradientFrom: theme.cardBackground,
+        backgroundGradientTo: theme.cardBackground,
+        decimalPlaces: 0,
+        color: (opacity = 1) => `rgba(102, 126, 234, ${opacity})`,
+        labelColor: (opacity = 1) => `rgba(${colorScheme === 'dark' ? '255, 255, 255' : '0, 0, 0'}, ${opacity})`,
+        style: {
+            borderRadius: 16
+        },
+        propsForDots: {
+            r: '6',
+            strokeWidth: '2',
+            stroke: theme.gradientStart
+        }
+    };
+
+    const distanceChartConfig = {
+        ...chartConfig,
+        color: (opacity = 1) => `rgba(118, 75, 162, ${opacity})`,
+        propsForDots: {
+            r: '6',
+            strokeWidth: '2',
+            stroke: theme.gradientEnd
+        }
+    };
+
+    const altitudeChartConfig = {
+        ...chartConfig,
+        color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
+        propsForDots: {
+            r: '6',
+            strokeWidth: '2',
+            stroke: '#f59e0b'
+        }
+    };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate('EditProfile', { onGoBack: () => refreshProfile() })} style={styles.editButton}>
-                    <Icon name="edit" size={20} color="#fff" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-                    <Text style={styles.logoutButtonText}>Logout</Text>
-                </TouchableOpacity>
-            </View>
-            <View style={styles.profileContainer}>
-                <View style={styles.profileName}>
-                    <Text style={styles.profileNameText}>{`${profile.name} ${profile.surname}`}</Text>
-                    <Text style={styles.profileUsername}>{profile.username}</Text>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+            <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+            <ScrollView 
+                contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.tint} />}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.header}>
+                    <TouchableOpacity 
+                        onPress={() => navigation.navigate('EditProfile', { onGoBack: () => refreshProfile() })} 
+                        style={[styles.editButton, { backgroundColor: theme.gradientStart }]}
+                        activeOpacity={0.8}
+                    >
+                        <Icon name="edit" size={20} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        onPress={logout} 
+                        style={styles.logoutButton}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.logoutButtonText, { color: theme.error }]}>Logout</Text>
+                    </TouchableOpacity>
                 </View>
-                <View style={styles.profileInfo}>
-                    <Text style={styles.infoText}>Age: <Text style={styles.infoValue}>{profile.age}</Text></Text>
-                    <Text style={styles.infoText}>Height: <Text style={styles.infoValue}>{profile.height} cm</Text></Text>
-                    <Text style={styles.infoText}>Weight: <Text style={styles.infoValue}>{profile.weight} kg</Text></Text>
+
+                <View style={[styles.profileCard, { backgroundColor: theme.cardBackground }]}>
+                    <View style={[styles.profileName, { borderBottomColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }]}>
+                        <Text style={[styles.profileNameText, { color: theme.text }]}>
+                            {`${profile.name} ${profile.surname}`.trim() || 'No Name'}
+                        </Text>
+                        <Text style={[styles.profileUsername, { color: theme.secondaryText }]}>
+                            {profile.username || 'No Username'}
+                        </Text>
+                    </View>
+                    
+                    <View style={styles.profileInfo}>
+                        <View style={[styles.infoItem, { backgroundColor: theme.background }]}>
+                            <Text style={[styles.infoLabel, { color: theme.secondaryText }]}>Age</Text>
+                            <Text style={[styles.infoValue, { color: theme.text }]}>
+                                {profile.age || 'N/A'}
+                            </Text>
+                        </View>
+                        <View style={[styles.infoItem, { backgroundColor: theme.background }]}>
+                            <Text style={[styles.infoLabel, { color: theme.secondaryText }]}>Height</Text>
+                            <Text style={[styles.infoValue, { color: theme.text }]}>
+                                {profile.height ? `${profile.height} cm` : 'N/A'}
+                            </Text>
+                        </View>
+                        <View style={[styles.infoItem, { backgroundColor: theme.background }]}>
+                            <Text style={[styles.infoLabel, { color: theme.secondaryText }]}>Weight</Text>
+                            <Text style={[styles.infoValue, { color: theme.text }]}>
+                                {profile.weight ? `${profile.weight} kg` : 'N/A'}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
-            </View>
-            <View style={styles.chartContainer}>
-                <Text style={styles.chartTitle}>Steps in Last 7 Days</Text>
-                <BarChart
-                    data={activityData.steps}
-                    width={screenWidth - 40}
-                    height={220}
-                    chartConfig={{
-                        backgroundColor: '#ffffff',
-                        backgroundGradientFrom: '#ffffff',
-                        backgroundGradientTo: '#ffffff',
-                        decimalPlaces: 0,
-                        color: (opacity = 1) => `rgba(45, 83, 189, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        style: {
-                            borderRadius: 16
-                        },
-                        propsForDots: {
-                            r: '6',
-                            strokeWidth: '2',
-                            stroke: '#2d53bd'
-                        }
-                    }}
-                    style={{
-                        marginVertical: 8,
-                        borderRadius: 16
-                    }}
-                />
-                <Text style={styles.chartTitle}>Distance in Last 7 Days</Text>
-                <LineChart
-                    data={activityData.distance}
-                    width={screenWidth - 40}
-                    height={220}
-                    chartConfig={{
-                        backgroundColor: '#ffffff',
-                        backgroundGradientFrom: '#ffffff',
-                        backgroundGradientTo: '#ffffff',
-                        decimalPlaces: 2,
-                        color: (opacity = 1) => `rgba(252, 3, 161, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        style: {
-                            borderRadius: 16
-                        },
-                        propsForDots: {
-                            r: '6',
-                            strokeWidth: '2',
-                            stroke: '#fc03a1'
-                        }
-                    }}
-                    bezier
-                    style={{
-                        marginVertical: 8,
-                        borderRadius: 16
-                    }}
-                />
-                <Text style={styles.chartTitle}>Altitude Change in Last 7 Days</Text>
-                <LineChart
-                    data={activityData.altitude}
-                    width={screenWidth - 40}
-                    height={220}
-                    chartConfig={{
-                        backgroundColor: '#ffffff',
-                        backgroundGradientFrom: '#ffffff',
-                        backgroundGradientTo: '#ffffff',
-                        decimalPlaces: 2,
-                        color: (opacity = 1) => `rgba(250, 140, 50, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        style: {
-                            borderRadius: 16
-                        },
-                        propsForDots: {
-                            r: '6',
-                            strokeWidth: '2',
-                            stroke: '#fa8c32'
-                        }
-                    }}
-                    bezier
-                    style={{
-                        marginVertical: 8,
-                        borderRadius: 16
-                    }}
-                />
-            </View>
-            {errors && <Text style={styles.errorText}>{errors}</Text>}
-        </ScrollView>
+
+                <View style={styles.chartsSection}>
+                    <View style={[styles.chartCard, { backgroundColor: theme.cardBackground }]}>
+                        <Text style={[styles.chartTitle, { color: theme.text }]}>Steps in Last 7 Days</Text>
+                        <BarChart
+                            data={activityData.steps}
+                            width={screenWidth - 80}
+                            height={220}
+                            chartConfig={chartConfig}
+                            style={{
+                                marginVertical: 8,
+                                borderRadius: 16
+                            }}
+                            yAxisLabel=""
+                            yAxisSuffix=""
+                            showValuesOnTopOfBars
+                        />
+                    </View>
+
+                    <View style={[styles.chartCard, { backgroundColor: theme.cardBackground }]}>
+                        <Text style={[styles.chartTitle, { color: theme.text }]}>Distance in Last 7 Days</Text>
+                        <LineChart
+                            data={activityData.distance}
+                            width={screenWidth - 80}
+                            height={220}
+                            chartConfig={distanceChartConfig}
+                            bezier
+                            style={{
+                                marginVertical: 8,
+                                borderRadius: 16
+                            }}
+                            yAxisLabel=""
+                            yAxisSuffix=" km"
+                        />
+                    </View>
+
+                    <View style={[styles.chartCard, { backgroundColor: theme.cardBackground }]}>
+                        <Text style={[styles.chartTitle, { color: theme.text }]}>Altitude Change in Last 7 Days</Text>
+                        <LineChart
+                            data={activityData.altitude}
+                            width={screenWidth - 80}
+                            height={220}
+                            chartConfig={altitudeChartConfig}
+                            bezier
+                            style={{
+                                marginVertical: 8,
+                                borderRadius: 16
+                            }}
+                            yAxisLabel=""
+                            yAxisSuffix=" m"
+                        />
+                    </View>
+                </View>
+
+                {errors && (
+                    <View style={[styles.errorContainer, { backgroundColor: theme.errorBackground }]}>
+                        <Text style={[styles.errorText, { color: theme.error }]}>{errors}</Text>
+                    </View>
+                )}
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+    },
     container: {
         flexGrow: 1,
         padding: 20,
-        backgroundColor: '#fff',
+        paddingTop: 10,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 24,
+        paddingTop: 8,
     },
     editButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#007AFF',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        borderRadius: 5,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        shadowColor: '#667eea',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
     },
-    profileContainer: {
-        marginBottom: 20,
+    logoutButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+    },
+    logoutButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    profileCard: {
+        borderRadius: 20,
+        padding: 24,
+        marginBottom: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 8,
     },
     profileName: {
-        marginTop: 30,
-        marginLeft: 8,
+        marginBottom: 24,
+        paddingBottom: 20,
+        borderBottomWidth: 1,
     },
     profileNameText: {
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 32,
+        fontWeight: '700',
+        marginBottom: 8,
+        letterSpacing: -0.5,
     },
     profileUsername: {
         fontSize: 18,
-        color: '#666',
+        fontWeight: '500',
     },
     profileInfo: {
-        marginTop: 20,
-        marginLeft: 8,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
     },
-    infoText: {
-        fontSize: 16,
-        marginBottom: 5,
+    infoItem: {
+        flex: 1,
+        minWidth: '30%',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    infoLabel: {
+        fontSize: 12,
+        fontWeight: '500',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 8,
     },
     infoValue: {
-        fontWeight: 'bold',
+        fontSize: 20,
+        fontWeight: '700',
     },
-    chartContainer: {
-        marginTop: 20,
+    chartsSection: {
+        gap: 24,
+    },
+    chartCard: {
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 8,
     },
     chartTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
+        fontWeight: '700',
         textAlign: 'center',
-        marginBottom: 10,
+        marginBottom: 16,
+        letterSpacing: -0.3,
+    },
+    errorContainer: {
+        padding: 16,
+        borderRadius: 12,
+        marginTop: 20,
+        borderWidth: 1,
     },
     errorText: {
-        color: 'red',
-        marginTop: 20,
+        fontSize: 14,
         textAlign: 'center',
+        fontWeight: '500',
     },
     loginMessage: {
         textAlign: 'center',
-        marginTop: 20,
-        fontSize: 16,
-        color: 'gray',
-    },
-    logoutButtonText: {
-        color: '#007AFF',
+        marginTop: 40,
         fontSize: 16,
     },
 });

@@ -1,8 +1,12 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
-import { UserContext } from '../context/userContext'; 
+import { useColorScheme } from 'react-native';
+import { UserContext } from '../context/userContext';
+import { apiFetch } from '../config/api';
+import { Colors } from '@/constants/Colors';
 
 const RegisterScreen = () => {
     const { login } = useContext(UserContext);
@@ -12,7 +16,10 @@ const RegisterScreen = () => {
     const [surname, setSurname] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation();
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
 
     async function registerForPushNotificationsAsync() {
         let token;
@@ -36,127 +43,364 @@ const RegisterScreen = () => {
     };
 
     const handleRegister = async () => {
+        setError('');
+        
         if (!username || !email || !name || !surname || !password) {
-            Alert.alert("Please fill all fields");
+            setError("Please fill all fields");
             return;
         }
 
         if (!validateEmail(email)) {
-            Alert.alert("Invalid Email", "Please enter a valid email address");
+            setError("Please enter a valid email address");
             return;
         }
         
-        const token = await registerForPushNotificationsAsync();
-
-        if (!token) {
-            Alert.alert("Failed to get a push token");
-            return;
+        setIsLoading(true);
+        let token = null;
+        try {
+            token = await registerForPushNotificationsAsync();
+        } catch (tokenError) {
+            console.log("Push notification token not available, continuing without it");
         }
 
         try {
-            const response = await fetch('https://mallard-set-akita.ngrok-free.app/users/register', {
+            const response = await apiFetch('/users/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name, surname, username, email, password, token
+                    name, surname, username, email, password, token: token || undefined
                 })
             });
+
             const jsonData = await response.json();
 
             if (response.status === 201) {
-                Alert.alert("Success", "You have registered successfully!");
                 setUsername('');
                 setEmail('');
                 setName('');
                 setSurname('');
                 setPassword('');
                 setError('');
+                
                 if(jsonData.newUser) {
                     login(jsonData.newUser);
-                    navigation.navigate("FaceIdVideo");
+                navigation.navigate("FaceIdVideo");
                 } else {
-                    setError("Invalid credentials or login failed");
+                    setError("Invalid credentials or registration failed");
                 }
-                
+            } else if (response.status === 400) {
+                const errorMsg = jsonData.message || "Registration failed. Please check your input.";
+                setError(errorMsg);
             } else {
                 setError(jsonData.message || "Registration failed");
-                Alert.alert("Registration Failed", jsonData.message);
             }
         } catch (error) {
             console.error(error);
-            setError("Failed to connect to the server.");
-            Alert.alert("Network Error", "Failed to connect to the server.");
+            const errorMessage = error.message || "Failed to connect to the server.";
+            setError(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Register</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Username"
-                value={username}
-                onChangeText={setUsername}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Name"
-                value={name}
-                onChangeText={setName}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Surname"
-                value={surname}
-                onChangeText={setSurname}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-            />
-            <View style={styles.buttonContainer}>
-                <Button title="Register" onPress={handleRegister} />
-            </View>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-        </ScrollView>
+        <>
+            <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+            <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+                <KeyboardAvoidingView 
+                    style={[styles.container, { backgroundColor: theme.background }]}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <ScrollView 
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={styles.content}>
+                            <View style={styles.header}>
+                                <Text style={styles.emoji}>👋</Text>
+                                <Text style={[styles.title, { color: theme.text }]}>Create Account</Text>
+                                <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
+                                    Join us and start your healthy lifestyle journey
+                                </Text>
+                            </View>
+
+                            <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+                                <View style={styles.form}>
+                                    <View style={styles.inputContainer}>
+                                        <TextInput 
+                                            style={[
+                                                styles.input, 
+                                                { 
+                                                    backgroundColor: theme.inputBackground,
+                                                    borderColor: theme.inputBorder,
+                                                    color: theme.inputText,
+                                                }
+                                            ]}
+                                            placeholder="Username" 
+                                            placeholderTextColor={theme.placeholder}
+                                            value={username} 
+                                            onChangeText={(text) => {
+                                                setUsername(text);
+                                                setError("");
+                                            }}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+
+                                    <View style={styles.inputContainer}>
+                                        <TextInput 
+                                            style={[
+                                                styles.input, 
+                                                { 
+                                                    backgroundColor: theme.inputBackground,
+                                                    borderColor: theme.inputBorder,
+                                                    color: theme.inputText,
+                                                }
+                                            ]}
+                                            placeholder="Email" 
+                                            placeholderTextColor={theme.placeholder}
+                                            keyboardType="email-address"
+                                            value={email} 
+                                            onChangeText={(text) => {
+                                                setEmail(text);
+                                                setError("");
+                                            }}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+
+                                    <View style={styles.inputContainer}>
+                                        <TextInput 
+                                            style={[
+                                                styles.input, 
+                                                { 
+                                                    backgroundColor: theme.inputBackground,
+                                                    borderColor: theme.inputBorder,
+                                                    color: theme.inputText,
+                                                }
+                                            ]}
+                                            placeholder="Name" 
+                                            placeholderTextColor={theme.placeholder}
+                                            value={name} 
+                                            onChangeText={(text) => {
+                                                setName(text);
+                                                setError("");
+                                            }}
+                                            autoCapitalize="words"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+
+                                    <View style={styles.inputContainer}>
+                                        <TextInput 
+                                            style={[
+                                                styles.input, 
+                                                { 
+                                                    backgroundColor: theme.inputBackground,
+                                                    borderColor: theme.inputBorder,
+                                                    color: theme.inputText,
+                                                }
+                                            ]}
+                                            placeholder="Surname" 
+                                            placeholderTextColor={theme.placeholder}
+                                            value={surname} 
+                                            onChangeText={(text) => {
+                                                setSurname(text);
+                                                setError("");
+                                            }}
+                                            autoCapitalize="words"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+
+                                    <View style={styles.inputContainer}>
+                                        <TextInput 
+                                            style={[
+                                                styles.input, 
+                                                { 
+                                                    backgroundColor: theme.inputBackground,
+                                                    borderColor: theme.inputBorder,
+                                                    color: theme.inputText,
+                                                }
+                                            ]}
+                                            placeholder="Password" 
+                                            placeholderTextColor={theme.placeholder}
+                                            value={password} 
+                                            onChangeText={(text) => {
+                                                setPassword(text);
+                                                setError("");
+                                            }}
+                                            secureTextEntry 
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                    </View>
+
+                                    {error ? (
+                                        <View style={[styles.errorContainer, { backgroundColor: theme.errorBackground }]}>
+                                            <Text style={[styles.errorMessage, { color: theme.error }]}>{error}</Text>
+                                        </View>
+                                    ) : null}
+
+                                    <TouchableOpacity 
+                                        onPress={handleRegister} 
+                                        activeOpacity={0.8}
+                                        style={[
+                                            styles.button, 
+                                            { 
+                                                backgroundColor: theme.gradientStart,
+                                                opacity: isLoading ? 0.6 : 1
+                                            }
+                                        ]}
+                                        disabled={isLoading}
+                                    >
+                                        <Text style={styles.buttonText}>
+                                            {isLoading ? 'Creating Account...' : 'Sign Up'}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <View style={[
+                                        styles.loginContainer,
+                                        { 
+                                            borderTopColor: colorScheme === 'dark' 
+                                                ? 'rgba(255, 255, 255, 0.1)' 
+                                                : 'rgba(0, 0, 0, 0.05)'
+                                        }
+                                    ]}>
+                                        <Text style={[styles.loginText, { color: theme.secondaryText }]}>
+                                            Already have an account?{' '}
+                                        </Text>
+                                        <TouchableOpacity 
+                                            onPress={() => navigation.navigate('Login')}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={[styles.loginLink, { color: theme.gradientStart }]}>
+                                                Sign In
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </>
     );
 }
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+    },
     container: {
         flex: 1,
-        padding: 20,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+    },
+    content: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 40,
+    },
+    header: {
+        alignItems: 'center',
+        marginBottom: 40,
+        paddingTop: 20,
+    },
+    emoji: {
+        fontSize: 72,
         marginBottom: 20,
     },
+    title: {
+        fontSize: 32,
+        fontWeight: '700',
+        marginBottom: 8,
+        letterSpacing: -0.5,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 22,
+        paddingHorizontal: 20,
+    },
+    card: {
+        borderRadius: 24,
+        padding: 32,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 12,
+    },
+    form: {
+        gap: 20,
+    },
+    inputContainer: {
+        marginBottom: 4,
+    },
     input: {
-        height: 40,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#FFF', // Optional: makes the border visible
-        padding: 10,
-        borderRadius: 5,
+        height: 56,
+        borderWidth: 2,
+        borderRadius: 16,
+        paddingHorizontal: 20,
+        fontSize: 16,
     },
-    buttonContainer: {
-        marginTop: 20,
+    errorContainer: {
+        padding: 14,
+        borderRadius: 12,
+        marginTop: 4,
     },
-    error: {
-        color: 'red',
-        marginTop: 10,
-    }
+    errorMessage: {
+        fontSize: 14,
+        textAlign: 'center',
+        fontWeight: '500',
+    },
+    button: {
+        paddingVertical: 18,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+        shadowColor: '#667eea',
+        shadowOffset: {
+            width: 0,
+            height: 6,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    buttonText: {
+        color: '#ffffff',
+        fontSize: 17,
+        fontWeight: '600',
+        letterSpacing: 0.5,
+    },
+    loginContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 24,
+        paddingTop: 20,
+        borderTopWidth: 1,
+    },
+    loginText: {
+        fontSize: 15,
+    },
+    loginLink: {
+        fontSize: 15,
+        fontWeight: '600',
+    },
 });
 
 export default RegisterScreen;

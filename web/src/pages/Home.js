@@ -4,7 +4,8 @@ import { UserContext } from '../userContext';
 import axios from 'axios';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import './ActivitiesList.css'; 
+import './ActivitiesList.css';
+import './Home.css'; 
 
 function Home() {
     const { user } = useContext(UserContext);
@@ -15,13 +16,27 @@ function Home() {
         if (user) {
             axios.get(`http://localhost:3001/activities`)
             .then(response => {
+              // Preverimo, ali je response.data array
+              if (!Array.isArray(response.data)) {
+                console.error('Invalid response format:', response.data);
+                setError('Invalid data format received');
+                return;
+              }
+              
               // Filtriramo aktivnosti, da odstranimo aktivnosti trenutnega uporabnika
-              const filteredActivities = response.data.filter(activity => activity.userID._id !== user._id);
+              // Dodamo preverjanje, da userID obstaja, preden dostopamo do _id
+              const filteredActivities = response.data.filter(activity => 
+                activity && 
+                activity.userID && 
+                activity.userID._id && 
+                activity.userID._id !== user._id
+              );
 
             // Nato razvrstimo filtrirane aktivnosti po datumu začetka od najnovejše do najstarejše
             const sortedActivities = filteredActivities.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
 
             setActivities(sortedActivities);
+            setError(''); // Počistimo napako, če je bilo vse v redu
           })
           .catch(error => {
               setError('Failed to fetch activities');
@@ -65,7 +80,85 @@ function Home() {
         return (distance / (duration / 3600000)).toFixed(2); // vrne hitrost v km/h
     };
 
-    if (!user) return <p>Please login to view your activities.</p>;
+    if (!user) {
+        return (
+            <div className="landing-container">
+                <section className="hero-section">
+                    <div className="hero-content">
+                        <div className="hero-icon">🏃</div>
+                        <h1 className="hero-title">Track Your Healthy Lifestyle</h1>
+                        <p className="hero-subtitle">
+                            Monitor your activities, track your progress, and stay motivated on your journey to a healthier life.
+                        </p>
+                        <Link to="/login" className="cta-button">Get Started</Link>
+                    </div>
+                </section>
+
+                <section className="features-section">
+                    <div className="feature-card">
+                        <span className="feature-icon">📍</span>
+                        <h3 className="feature-title">GPS Tracking</h3>
+                        <p className="feature-description">
+                            Track your routes with real-time GPS location. See your path on interactive maps and analyze your movements.
+                        </p>
+                    </div>
+                    <div className="feature-card">
+                        <span className="feature-icon">📊</span>
+                        <h3 className="feature-title">Activity Analytics</h3>
+                        <p className="feature-description">
+                            Monitor distance, pace, speed, altitude changes, and calories burned. Get detailed insights into your workouts.
+                        </p>
+                    </div>
+                    <div className="feature-card">
+                        <span className="feature-icon">🏃‍♂️</span>
+                        <h3 className="feature-title">Multiple Activities</h3>
+                        <p className="feature-description">
+                            Track running, walking, cycling, and hiking. Each activity type has specialized metrics tailored to your workout.
+                        </p>
+                    </div>
+                    <div className="feature-card">
+                        <span className="feature-icon">👥</span>
+                        <h3 className="feature-title">Community</h3>
+                        <p className="feature-description">
+                            Discover activities from other users, get inspired, and share your achievements with the community.
+                        </p>
+                    </div>
+                    <div className="feature-card">
+                        <span className="feature-icon">📱</span>
+                        <h3 className="feature-title">Mobile App</h3>
+                        <p className="feature-description">
+                            Track activities on the go with our mobile app. Start and stop activities anytime, anywhere.
+                        </p>
+                    </div>
+                    <div className="feature-card">
+                        <span className="feature-icon">🌤️</span>
+                        <h3 className="feature-title">Weather Integration</h3>
+                        <p className="feature-description">
+                            See weather conditions for your activities. Plan your workouts based on current weather data.
+                        </p>
+                    </div>
+                </section>
+
+                <section className="stats-section">
+                    <h2 className="stats-title">Start Your Journey Today</h2>
+                    <div className="stats-grid">
+                        <div className="stat-item">
+                            <div className="stat-number">4</div>
+                            <div className="stat-label">Activity Types</div>
+                        </div>
+                        <div className="stat-item">
+                            <div className="stat-number">24/7</div>
+                            <div className="stat-label">Tracking</div>
+                        </div>
+                        <div className="stat-item">
+                            <div className="stat-number">100%</div>
+                            <div className="stat-label">Free</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        );
+    }
 
     return (
         <div className="main-container">
@@ -74,7 +167,7 @@ function Home() {
                 {activities.length > 0 ? (
                     <ul className="activities-list">
                         {activities.map(activity => (
-                            <li key={activity._id} className="activity-item">
+                            <li key={activity._id} className="activity-item" data-type={activity.type?.toLowerCase()}>
                                 <Link to={`/activity/${activity._id}`} className="activity-link">
                                 <div className="user-name">{activity.userID.name} {activity.userID.surname}</div>
                                 <div className="activity-header">

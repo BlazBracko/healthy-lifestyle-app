@@ -81,8 +81,8 @@ function Profile() {
                 return activityDate.toLocaleDateString() === date.toLocaleDateString();
             });
 
-            const dailySteps = dailyActivities.reduce((total, activity) => total + activity.stepCount, 0);
-            const dailyDistance = dailyActivities.reduce((total, activity) => total + activity.distance, 0);
+            const dailySteps = dailyActivities.reduce((total, activity) => total + (activity.stepCount || 0), 0);
+            const dailyDistance = dailyActivities.reduce((total, activity) => total + (activity.distance || 0), 0);
             const dailyAltitudeChange = dailyActivities.reduce((total, activity) => {
                 let altitudeChange = 0;
                 const altitudeChanges = activity.altitudeChanges;
@@ -95,7 +95,7 @@ function Profile() {
             }, 0);
 
             stepsData.push(dailySteps);
-            distanceData.push(dailyDistance.toFixed(2));
+            distanceData.push(dailyDistance ? dailyDistance.toFixed(2) : 0);
             altitudeData.push(dailyAltitudeChange);
         }
 
@@ -106,9 +106,10 @@ function Profile() {
                     {
                         label: 'Steps',
                         data: stepsData,
-                        borderColor: '#2d53bd',
-                        backgroundColor: 'rgba(45, 83, 189)',
-                        type: 'bar'
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderRadius: 8,
+                        borderSkipped: false,
                     }
                 ]
             },
@@ -118,10 +119,15 @@ function Profile() {
                     {
                         label: 'Distance',
                         data: distanceData,
-                        borderColor: 'rgba(252, 3, 161)',
-                        backgroundColor: 'rgba(252, 3, 161)',
-                        fill: false,
+                        borderColor: '#764ba2',
+                        backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                        fill: true,
                         tension: 0.4,
+                        pointBackgroundColor: '#764ba2',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
                     }
                 ]
             },
@@ -131,12 +137,14 @@ function Profile() {
                     {
                         label: 'Altitude change',
                         data: altitudeData,
-                        borderColor: 'rgba(250, 140, 50)',
-                        backgroundColor: 'rgba(250, 140, 50, 0.2)',  // More transparent
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
                         fill: true,
-                        pointBackgroundColor: 'rgba(250, 140, 50)',
-                        pointBorderColor: 'rgba(250, 140, 50)',
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
                         pointRadius: 5,
+                        pointHoverRadius: 7,
                         tension: 0.4,
                     }
                 ]
@@ -149,81 +157,162 @@ function Profile() {
     const options = {
         steps: {
             responsive: true,
+            maintainAspectRatio: true,
             plugins: {
+                legend: {
+                    display: false
+                },
                 title: {
                     display: true,
                     text: 'Steps in Last 7 Days',
                     font: {
-                        size: 18
+                        size: 18,
+                        weight: 'bold'
+                    },
+                    color: '#1a202c',
+                    padding: {
+                        bottom: 20
                     }
                 }
             },
             scales: {
                 x: {
+                    grid: {
+                        display: false
+                    },
                     ticks: {
-                        callback: function(value, index, values) {
-                            return new Date(value).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+                        color: '#718096',
+                        font: {
+                            size: 12
                         }
                     }
                 },
                 y: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#718096',
+                        font: {
+                            size: 12
+                        }
+                    },
                     title: {
                         display: true,
-                        text: 'Steps'
+                        text: 'Steps',
+                        color: '#718096',
+                        font: {
+                            size: 14,
+                            weight: '500'
+                        }
                     }
                 }
             }
         },
         distance: {
             responsive: true,
+            maintainAspectRatio: true,
             plugins: {
+                legend: {
+                    display: false
+                },
                 title: {
                     display: true,
                     text: 'Distance in Last 7 Days',
                     font: {
-                        size: 18
+                        size: 18,
+                        weight: 'bold'
+                    },
+                    color: '#1a202c',
+                    padding: {
+                        bottom: 20
                     }
                 }
             },
             scales: {
                 x: {
+                    grid: {
+                        display: false
+                    },
                     ticks: {
-                        callback: function(value, index, values) {
-                            return new Date(value).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+                        color: '#718096',
+                        font: {
+                            size: 12
                         }
                     }
                 },
                 y: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#718096',
+                        font: {
+                            size: 12
+                        }
+                    },
                     title: {
                         display: true,
-                        text: 'Distance (km)'
+                        text: 'Distance (km)',
+                        color: '#718096',
+                        font: {
+                            size: 14,
+                            weight: '500'
+                        }
                     }
                 }
             }
         },
         altitude: {
             responsive: true,
+            maintainAspectRatio: true,
             plugins: {
+                legend: {
+                    display: false
+                },
                 title: {
                     display: true,
                     text: 'Altitude Change in Last 7 Days',
                     font: {
-                        size: 18
+                        size: 18,
+                        weight: 'bold'
+                    },
+                    color: '#1a202c',
+                    padding: {
+                        bottom: 20
                     }
                 }
             },
             scales: {
                 x: {
+                    grid: {
+                        display: false
+                    },
                     ticks: {
-                        callback: function(value, index, values) {
-                            return new Date(value).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+                        color: '#718096',
+                        font: {
+                            size: 12
                         }
                     }
                 },
                 y: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#718096',
+                        font: {
+                            size: 12
+                        }
+                    },
                     title: {
                         display: true,
-                        text: 'Altitude Change (m)'
+                        text: 'Altitude Change (m)',
+                        color: '#718096',
+                        font: {
+                            size: 14,
+                            weight: '500'
+                        }
                     }
                 }
             }
@@ -243,9 +332,24 @@ function Profile() {
                     <p>{profile.username}</p>
                 </div>
                 <div className="profile-info">
-                    <p>Age: <strong>{profile.age}</strong></p>
-                    <p>Height: <strong>{profile.height} cm</strong></p>
-                    <p>Weight: <strong>{profile.weight} kg</strong></p>
+                    <div className="profile-info-item">
+                        <p>Age</p>
+                        <strong>{profile.age || 'N/A'}</strong>
+                    </div>
+                    <div className="profile-info-item">
+                        <p>Height</p>
+                        <strong>{profile.height ? `${profile.height} cm` : 'N/A'}</strong>
+                    </div>
+                    <div className="profile-info-item">
+                        <p>Weight</p>
+                        <strong>{profile.weight ? `${profile.weight} kg` : 'N/A'}</strong>
+                    </div>
+                    {profile.gender && (
+                        <div className="profile-info-item">
+                            <p>Gender</p>
+                            <strong>{profile.gender}</strong>
+                        </div>
+                    )}
                 </div>
             </div>
             <div className="activity-chart-container">

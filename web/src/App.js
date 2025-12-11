@@ -15,7 +15,7 @@ function App() {
   return (
     <Router>
       <Header title="Healthy Lifestyle App" />
-      <div className="App" style={{ marginTop: '110px' }}>
+      <div className="App" style={{ marginTop: '76px' }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

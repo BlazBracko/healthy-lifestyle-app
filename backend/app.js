@@ -11,10 +11,7 @@ const port = process.env.PORT || 3001;
 const uri = "mongodb+srv://blazbracko:yf78zKhBDPNRRtzY@hla.qyrwqwy.mongodb.net/?retryWrites=true&w=majority&appName=HLA";
 
 // Connect to MongoDB via Mongoose
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
+mongoose.connect(uri).then(() => {
   console.log('MongoDB connected successfully');
 }).catch(err => {
   console.error('MongoDB connection error:', err);
@@ -51,10 +48,20 @@ const recognitionRoutes = require('./routes/recognitionRoutes');
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', //  glede na izvor frontend aplikacije
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  origin: true, // Allow all origins (for mobile app and web)
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   credentials: true, // Omogočite pošiljanje poverilnic
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'User-Agent'],
 }));
+// Handle ngrok browser warning header
+app.use((req, res, next) => {
+  // Allow ngrok-skip-browser-warning header
+  if (req.headers['ngrok-skip-browser-warning']) {
+    // Continue with the request
+  }
+  next();
+});
+
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

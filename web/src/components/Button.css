@@ -1,17 +1,35 @@
-/* Button.css */
+/* Modern Button */
 .custom-button {
-    background-color: rgb(52, 94, 184);
-    padding: 10px;
-    border-radius: 5px;
-    color: white;
+    width: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 14px 24px;
+    border-radius: 8px;
+    color: #ffffff;
     text-align: center;
     border: none;
     cursor: pointer;
-    transition: background-color 0.8s;
-    margin: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    margin: 0;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   }
   
   .custom-button:hover {
-    background-color: darkblue;
+    background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  .custom-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  }
+  
+  .custom-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
   }
   

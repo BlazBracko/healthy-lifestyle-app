@@ -67,7 +67,35 @@ exports.createUser = async (req, res) => {
         res.status(201).json({newUser});
     } catch (err) {
         console.error("Error during user creation:", err);
-        res.status(500).json({ message: err.message });
+        
+        // Handle duplicate key errors (MongoDB E11000)
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern || {})[0] || 'field';
+            let message = '';
+            
+            if (field === 'username') {
+                message = 'Username already exists. Please choose a different username.';
+            } else if (field === 'email') {
+                message = 'Email already exists. Please use a different email address.';
+            } else if (field === 'name') {
+                message = 'A user with this name already exists.';
+            } else if (field === 'surname') {
+                message = 'A user with this surname already exists.';
+            } else {
+                message = `${field} already exists. Please choose a different value.`;
+            }
+            
+            return res.status(400).json({ message });
+        }
+        
+        // Handle other validation errors
+        if (err.name === 'ValidationError') {
+            const messages = Object.values(err.errors).map(e => e.message);
+            return res.status(400).json({ message: messages.join(', ') });
+        }
+        
+        // Generic server error
+        res.status(500).json({ message: err.message || 'An error occurred while creating the user' });
     }
 };
 
@@ -115,10 +143,27 @@ exports.updateUser = async (req, res) => {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
+        // Only update allowed fields (exclude sensitive fields like password unless explicitly provided)
+        const allowedFields = ['name', 'surname', 'email', 'age', 'height', 'weight', 'gender', 'platform', 'settings'];
+        const updateData = {};
+
         Object.keys(req.body).forEach(key => {
-            user[key] = req.body[key];
+            if (allowedFields.includes(key)) {
+                // Convert numeric fields from strings if needed
+                if (['age', 'height', 'weight'].includes(key) && req.body[key] !== undefined && req.body[key] !== null && req.body[key] !== '') {
+                    updateData[key] = key === 'weight' ? parseFloat(req.body[key]) : parseInt(req.body[key], 10);
+                } else if (req.body[key] !== undefined && req.body[key] !== null && req.body[key] !== '') {
+                    updateData[key] = req.body[key];
+                }
+            }
         });
 
+        // Apply updates
+        Object.keys(updateData).forEach(key => {
+            user[key] = updateData[key];
+        });
+
+        // Handle password separately if provided
         if (req.body.password) {
             await user.encryptPassword(req.body.password);
         }
@@ -126,7 +171,21 @@ exports.updateUser = async (req, res) => {
         const updatedUser = await user.save();
         res.status(200).json(updatedUser);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        console.error('Error updating user:', err);
+        
+        // Handle validation errors
+        if (err.name === 'ValidationError') {
+            const messages = Object.values(err.errors).map(e => e.message);
+            return res.status(400).json({ message: messages.join(', ') });
+        }
+        
+        // Handle duplicate key errors
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern || {})[0] || 'field';
+            return res.status(400).json({ message: `${field} already exists. Please choose a different value.` });
+        }
+        
+        res.status(400).json({ message: err.message || 'Failed to update user' });
     }
 };
 

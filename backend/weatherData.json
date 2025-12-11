@@ -5,41 +5,41 @@
   },
   "weather": [
     {
-      "id": 802,
-      "main": "Clouds",
-      "description": "scattered clouds",
-      "icon": "03d"
+      "id": 800,
+      "main": "Clear",
+      "description": "clear sky",
+      "icon": "01d"
     }
   ],
   "base": "stations",
   "main": {
-    "temp": 22.89,
-    "feels_like": 22.8,
-    "temp_min": 21.88,
-    "temp_max": 23.29,
-    "pressure": 1006,
-    "humidity": 60,
-    "sea_level": 1006,
-    "grnd_level": 956
+    "temp": 8.38,
+    "feels_like": 8.38,
+    "temp_min": 7.98,
+    "temp_max": 8.38,
+    "pressure": 1025,
+    "humidity": 78,
+    "sea_level": 1025,
+    "grnd_level": 972
   },
   "visibility": 10000,
   "wind": {
-    "speed": 1.8,
-    "deg": 265,
-    "gust": 1.74
+    "speed": 0.09,
+    "deg": 139,
+    "gust": 0.52
   },
   "clouds": {
-    "all": 30
+    "all": 0
   },
-  "dt": 1717957204,
+  "dt": 1765454016,
   "sys": {
     "type": 2,
-    "id": 2030424,
+    "id": 2089886,
     "country": "SI",
-    "sunrise": 1717902570,
-    "sunset": 1717958961
+    "sunrise": 1765434719,
+    "sunset": 1765466087
   },
-  "timezone": 7200,
+  "timezone": 3600,
   "id": 3191845,
   "name": "Ravne",
   "cod": 200

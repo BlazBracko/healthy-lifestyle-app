@@ -1,26 +1,24 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import RNPickerSelect from 'react-native-picker-select';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, useColorScheme, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { UserContext } from '../context/userContext';
+import { API_BASE_URL } from '../config/api';
+import { Colors } from '@/constants/Colors';
 
 const Activity = () => {
     const { user } = useContext(UserContext);
     const [selectedValue, setSelectedValue] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation();
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
 
-    const placeholder = {
-        label: 'Select a workout type...',
-        value: null,
-        color: '#6e6869',
-    };
-
-    const options = [
-        { label: 'Run', value: 'Run' },
-        { label: 'Walk', value: 'Walk' },
-        { label: 'Cycle', value: 'Cycle' },
-        { label: 'Hike', value: 'Hike' },
+    const workoutTypes = [
+        { label: 'Run', value: 'Run', icon: '🏃', color: '#ef4444' },
+        { label: 'Walk', value: 'Walk', icon: '🚶', color: '#10b981' },
+        { label: 'Cycle', value: 'Cycle', icon: '🚴', color: '#3b82f6' },
+        { label: 'Hike', value: 'Hike', icon: '🥾', color: '#f59e0b' },
     ];
 
     const handleStartActivity = async () => {
@@ -28,7 +26,7 @@ const Activity = () => {
             setIsLoading(true);
             const startTime = new Date();
             try {
-                const response = await fetch("https://mallard-set-akita.ngrok-free.app/activities", {
+                const response = await fetch(`${API_BASE_URL}/activities`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -63,80 +61,183 @@ const Activity = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.label}>Select a workout type:</Text>
-            <RNPickerSelect
-                placeholder={placeholder}
-                items={options}
-                onValueChange={value => setSelectedValue(value)}
-                value={selectedValue}
-                style={{
-                    inputIOS: styles.picker,
-                    inputAndroid: styles.picker,
-                    placeholder: styles.placeholder,
-                }}
-                useNativeAndroidPickerStyle={false}
-            />
-            <TouchableOpacity style={[styles.button, (!selectedValue || isLoading) ? styles.disabledButton : {}]}
-                onPress={handleStartActivity}
-                disabled={!selectedValue || isLoading}
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+            <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+            <KeyboardAvoidingView 
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                {isLoading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                    <Text style={styles.buttonText}>Start Activity</Text>
-                )}
-            </TouchableOpacity>
-        </View>
+                <View style={[styles.container, { backgroundColor: theme.background }]}>
+                    <View style={styles.content}>
+                        <View style={styles.header}>
+                            <Text style={[styles.title, { color: theme.text }]}>New Activity</Text>
+                            <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
+                                Choose your workout type to start tracking
+                            </Text>
+                        </View>
+
+                        <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+                            <View style={styles.form}>
+                                <Text style={[styles.label, { color: theme.text }]}>Select Workout Type</Text>
+                                
+                                <View style={styles.workoutGrid}>
+                                    {workoutTypes.map((workout) => (
+                                        <TouchableOpacity
+                                            key={workout.value}
+                                            style={[
+                                                styles.workoutButton,
+                                                selectedValue === workout.value 
+                                                    ? { 
+                                                        backgroundColor: workout.color,
+                                                        borderColor: workout.color,
+                                                        borderWidth: 3,
+                                                    }
+                                                    : {
+                                                        backgroundColor: theme.inputBackground,
+                                                        borderColor: theme.inputBorder,
+                                                        borderWidth: 2,
+                                                    }
+                                            ]}
+                                            onPress={() => setSelectedValue(workout.value)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={styles.workoutIcon}>{workout.icon}</Text>
+                                            <Text style={[
+                                                styles.workoutLabel,
+                                                { color: selectedValue === workout.value ? '#ffffff' : theme.text }
+                                            ]}>
+                                                {workout.label}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <TouchableOpacity 
+                                    style={[
+                                        styles.button, 
+                                        (!selectedValue || isLoading) ? styles.disabledButton : { backgroundColor: theme.gradientStart }
+                                    ]}
+                                    onPress={handleStartActivity}
+                                    disabled={!selectedValue || isLoading}
+                                    activeOpacity={0.8}
+                                >
+                                    {isLoading ? (
+                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                    ) : (
+                                        <Text style={styles.buttonText}>Start Activity</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+    },
+    keyboardView: {
+        flex: 1,
+    },
     container: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',
         padding: 20,
-        backgroundColor: '#EDEDEF', // A modern, light grey background
     },
-    picker: {
-        width: 300,
-        padding: 10,
-        backgroundColor: '#FFFFFF', // White background for the picker for a clean look
-        borderColor: '#E2E2E2', // Light border color
-        borderWidth: 1,
-        borderRadius: 4,
-        color: 'black',
-        alignSelf: 'center',
-        marginBottom: 20,
+    content: {
+        flex: 1,
+        justifyContent: 'center',
     },
-    placeholder: {
-        color: '#6e6869',
+    header: {
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: '700',
+        marginBottom: 8,
+        letterSpacing: -0.5,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 22,
+        paddingHorizontal: 20,
+    },
+    card: {
+        borderRadius: 24,
+        padding: 32,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 12,
+    },
+    form: {
+        gap: 24,
     },
     label: {
-        fontSize: 18,
-        marginBottom: 10,
-        color: '#333',
-        fontWeight: 'bold',
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    workoutGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 8,
+    },
+    workoutButton: {
+        flex: 1,
+        minWidth: '45%',
+        aspectRatio: 1,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    workoutIcon: {
+        fontSize: 48,
+        marginBottom: 8,
+    },
+    workoutLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
     },
     button: {
-        backgroundColor: '#007AFF',
-        padding: 12,
-        borderRadius: 5,
-        marginTop: 20,
+        paddingVertical: 18,
+        borderRadius: 16,
         alignItems: 'center',
-        width: 150,
+        justifyContent: 'center',
+        marginTop: 8,
+        shadowColor: '#667eea',
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
-        shadowRadius: 3,
-        shadowColor: '#000',
-        shadowOffset: { height: 2, width: 0 },
+        shadowRadius: 12,
+        elevation: 8,
     },
     buttonText: {
-        color: 'white',
-        fontSize: 16,
+        color: '#ffffff',
+        fontSize: 17,
+        fontWeight: '600',
+        letterSpacing: 0.5,
     },
     disabledButton: {
-        backgroundColor: '#879cc4',
+        backgroundColor: '#a0aec0',
+        shadowOpacity: 0,
+        elevation: 0,
     },
 });
 

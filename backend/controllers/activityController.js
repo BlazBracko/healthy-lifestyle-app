@@ -118,25 +118,33 @@ exports.endActivity = async (req, res) => {
         // Calculate total distance using the location data
         let totalDistance = 0;
         const { locationData } = activity;
-        for (let i = 1; i < locationData.length; i++) {
-            totalDistance += getDistanceFromLatLonInKm(
-                locationData[i-1].latitude,
-                locationData[i-1].longitude,
-                locationData[i].latitude,
-                locationData[i].longitude
-            );
+        
+        // Preveri, ali locationData obstaja in je array
+        if (locationData && Array.isArray(locationData) && locationData.length > 1) {
+            for (let i = 1; i < locationData.length; i++) {
+                totalDistance += getDistanceFromLatLonInKm(
+                    locationData[i-1].latitude,
+                    locationData[i-1].longitude,
+                    locationData[i].latitude,
+                    locationData[i].longitude
+                );
+            }
         }
 
-        // Optionally, update the weather conditions
-        const weatherData = await scrapeWeather(); // Assuming this function is already implemented
-        if (!weatherData) {
-            return res.status(500).json({ message: "Failed to fetch weather data." });
+        // Optionally, update the weather conditions (ne zahtevaj, če ne deluje)
+        let weatherData = null;
+        try {
+            weatherData = await scrapeWeather();
+        } catch (weatherError) {
+            console.warn('Weather data fetch failed, continuing without it:', weatherError.message);
         }
 
         // Update the activity with the end time, total distance, and weather conditions
         activity.endTime = new Date(endTime);
         activity.distance = totalDistance; //km
-        activity.weatherConditions = weatherData._id;
+        if (weatherData && weatherData._id) {
+            activity.weatherConditions = weatherData._id;
+        }
         activity.stepCount = stepCount;
         activity.caloriesBurned = caloriesBurned;
         
