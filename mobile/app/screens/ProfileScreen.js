@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useColorScheme, StatusBar, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useColorScheme, StatusBar, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { UserContext } from '../context/userContext';
@@ -27,6 +27,7 @@ const ProfileScreen = () => {
     const [activities, setActivities] = useState([]);
     const [errors, setErrors] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    const [profilePhoto, setProfilePhoto] = useState(null);
     const navigation = useNavigation();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
@@ -52,6 +53,24 @@ const ProfileScreen = () => {
                     });
                 })
                 .catch(error => setErrors('Failed to fetch profile'));
+
+            // Naloži profilno sliko
+            loadProfilePhoto();
+        }
+    };
+
+    const loadProfilePhoto = async () => {
+        if (!user || !user.username) return;
+        
+        try {
+            const response = await axios.get(`${API_BASE_URL}/users/${user.username}/profile-photo`);
+            if (response.data && response.data.image) {
+                setProfilePhoto(`data:image/${response.data.format || 'png'};base64,${response.data.image}`);
+            }
+        } catch (error) {
+            if (error.response?.status !== 404) {
+                console.error('Error loading profile photo:', error);
+            }
         }
     };
 
@@ -64,14 +83,12 @@ const ProfileScreen = () => {
                 setActivities(activitiesData);
                 setErrors('');
             } catch (error) {
-                // Če je 404 ali prazen seznam, nastavi prazen array namesto errorja
                 if (error.response && error.response.status === 404) {
                     setActivities([]);
                     setErrors('');
                 } else {
                     setErrors('Failed to fetch activities');
                     console.error('Error fetching activities:', error);
-                    // Nastavi prazen array, da aplikacija ne crasne
                     setActivities([]);
                 }
             }
@@ -86,6 +103,7 @@ const ProfileScreen = () => {
         setRefreshing(true);
         await refreshProfile();
         await fetchActivities();
+        await loadProfilePhoto();
         setRefreshing(false);
     };
 
@@ -235,6 +253,19 @@ const ProfileScreen = () => {
                 </View>
 
                 <View style={[styles.profileCard, { backgroundColor: theme.cardBackground }]}>
+                    {/* Profile Photo */}
+                    <View style={styles.profilePhotoContainer}>
+                        {profilePhoto ? (
+                            <Image source={{ uri: profilePhoto }} style={styles.profilePhotoImage} />
+                        ) : (
+                            <View style={[styles.profilePhotoPlaceholder, { backgroundColor: theme.gradientStart }]}>
+                                <Text style={styles.profilePhotoPlaceholderText}>
+                                    {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                    
                     <View style={[styles.profileName, { borderBottomColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }]}>
                         <Text style={[styles.profileNameText, { color: theme.text }]}>
                             {`${profile.name} ${profile.surname}`.trim() || 'No Name'}
@@ -376,10 +407,36 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
         elevation: 8,
     },
+    profilePhotoContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    profilePhotoImage: {
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        borderWidth: 5,
+        borderColor: '#667eea',
+    },
+    profilePhotoPlaceholder: {
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 5,
+        borderColor: '#667eea',
+    },
+    profilePhotoPlaceholderText: {
+        fontSize: 64,
+        fontWeight: '700',
+        color: '#ffffff',
+    },
     profileName: {
         marginBottom: 24,
         paddingBottom: 20,
         borderBottomWidth: 1,
+        alignItems: 'center',
     },
     profileNameText: {
         fontSize: 32,

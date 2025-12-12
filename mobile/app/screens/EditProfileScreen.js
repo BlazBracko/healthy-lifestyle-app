@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, useColorScheme, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, useColorScheme, StatusBar, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
+import * as ImagePicker from 'expo-image-picker';
 import { UserContext } from '../context/userContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { API_BASE_URL } from '../config/api';
@@ -22,6 +23,9 @@ const EditProfileScreen = () => {
     });
     const [errors, setErrors] = useState('');
     const [success, setSuccess] = useState('');
+    const [profilePhoto, setProfilePhoto] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const navigation = useNavigation();
     const route = useRoute();
     const colorScheme = useColorScheme();
@@ -47,8 +51,133 @@ const EditProfileScreen = () => {
                     setErrors('Failed to fetch profile');
                     console.error('Error fetching profile:', error);
                 });
+
+            // Naloži profilno sliko
+            loadProfilePhoto();
         }
     }, [user]);
+
+    const loadProfilePhoto = async () => {
+        if (!user || !user.username) return;
+        
+        try {
+            const response = await axios.get(`${API_BASE_URL}/users/${user.username}/profile-photo`);
+            if (response.data && response.data.image) {
+                setPhotoPreview(`data:image/${response.data.format || 'png'};base64,${response.data.image}`);
+            }
+        } catch (error) {
+            // Če slika ne obstaja, to ni napaka
+            if (error.response?.status !== 404) {
+                console.error('Error loading profile photo:', error);
+            }
+        }
+    };
+
+    const pickImage = async () => {
+        // Zahtevaj dovoljenja
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to upload photos!');
+            return;
+        }
+
+        // Odpri image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            const asset = result.assets[0];
+            
+            // Validacija velikosti (5MB)
+            if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+                Alert.alert('Error', 'Image size must be less than 5MB');
+                return;
+            }
+
+            setProfilePhoto(asset);
+            setPhotoPreview(asset.uri);
+            setErrors('');
+        }
+    };
+
+    const takePhoto = async () => {
+        // Zahtevaj dovoljenja
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission needed', 'Sorry, we need camera permissions to take photos!');
+            return;
+        }
+
+        // Odpri kamero
+        const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            const asset = result.assets[0];
+            setProfilePhoto(asset);
+            setPhotoPreview(asset.uri);
+            setErrors('');
+        }
+    };
+
+    const showImagePickerOptions = () => {
+        Alert.alert(
+            'Select Photo',
+            'Choose an option',
+            [
+                { text: 'Camera', onPress: takePhoto },
+                { text: 'Gallery', onPress: pickImage },
+                { text: 'Cancel', style: 'cancel' }
+            ]
+        );
+    };
+
+    const handlePhotoUpload = async () => {
+        if (!profilePhoto || !user || !user.username) {
+            Alert.alert('Error', 'Please select an image to upload');
+            return;
+        }
+
+        setUploadingPhoto(true);
+        setErrors('');
+
+        try {
+            // Ustvari FormData
+            const formData = new FormData();
+            formData.append('photo', {
+                uri: profilePhoto.uri,
+                type: 'image/jpeg',
+                name: 'photo.jpg',
+            });
+
+            await axios.post(`${API_BASE_URL}/users/${user.username}/profile-photo`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                timeout: 30000,
+            });
+
+            setSuccess('Profile photo uploaded successfully!');
+            setProfilePhoto(null);
+            // Osveži sliko
+            await loadProfilePhoto();
+            
+            Alert.alert('Success', 'Profile photo uploaded successfully!');
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to upload profile photo';
+            setErrors(errorMessage);
+            Alert.alert('Error', errorMessage);
+        } finally {
+            setUploadingPhoto(false);
+        }
+    };
 
     const handleChange = (name, value) => {
         setProfile({ ...profile, [name]: value });
@@ -118,6 +247,44 @@ const EditProfileScreen = () => {
                     <View style={styles.header}>
                         <Text style={[styles.title, { color: theme.text }]}>Edit Profile</Text>
                         <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Update your personal information</Text>
+                    </View>
+
+                    {/* Profile Photo Upload Section */}
+                    <View style={[styles.photoSection, { backgroundColor: theme.cardBackground }]}>
+                        <View style={styles.photoPreview}>
+                            {photoPreview ? (
+                                <Image source={{ uri: photoPreview }} style={styles.photoImage} />
+                            ) : (
+                                <View style={[styles.photoPlaceholder, { backgroundColor: theme.gradientStart }]}>
+                                    <Text style={styles.photoPlaceholderText}>
+                                        {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                        <View style={styles.photoButtons}>
+                            <TouchableOpacity
+                                style={[styles.photoButton, { backgroundColor: theme.gradientStart }]}
+                                onPress={showImagePickerOptions}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.photoButtonText}>
+                                    {photoPreview ? 'Change Photo' : 'Upload Photo'}
+                                </Text>
+                            </TouchableOpacity>
+                            {profilePhoto && (
+                                <TouchableOpacity
+                                    style={[styles.photoSaveButton, { backgroundColor: '#48bb78' }]}
+                                    onPress={handlePhotoUpload}
+                                    disabled={uploadingPhoto}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.photoButtonText}>
+                                        {uploadingPhoto ? 'Uploading...' : 'Save Photo'}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
 
                     <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
@@ -419,6 +586,72 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
         fontSize: 16,
+    },
+    photoSection: {
+        borderRadius: 20,
+        padding: 24,
+        marginBottom: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 8,
+    },
+    photoPreview: {
+        marginBottom: 16,
+    },
+    photoImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 4,
+        borderColor: '#667eea',
+    },
+    photoPlaceholder: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 4,
+        borderColor: '#667eea',
+    },
+    photoPlaceholderText: {
+        fontSize: 48,
+        fontWeight: '700',
+        color: '#ffffff',
+    },
+    photoButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+    },
+    photoButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        shadowColor: '#667eea',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    photoSaveButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        shadowColor: '#48bb78',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    photoButtonText: {
+        color: '#ffffff',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });
 

@@ -2,8 +2,10 @@
 // Change USE_NGROK to false to use local network IP instead
 const USE_NGROK = false; // Set to true if ngrok is running
 const NGROK_URL = 'https://mallard-set-akita.ngrok-free.app';
-const LOCAL_IP = '192.168.50.202'; // Change this to your computer's local IP (find it with: ipconfig or ifconfig)
+// const LOCAL_IP = '192.168.50.202'; // Change this to your computer's local IP (find it with: ipconfig or ifconfig)
+const LOCAL_IP = '192.168.1.153'; // Change this to your computer's local IP (find it with: ipconfig or ifconfig)
 const LOCAL_PORT = '3001';
+
 
 export const API_BASE_URL = USE_NGROK 
   ? NGROK_URL 

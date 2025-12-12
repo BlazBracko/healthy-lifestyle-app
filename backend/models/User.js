@@ -22,7 +22,9 @@ const userSchema = new Schema({
     weight: { type: Number, min: 0 }, // Teža telesa v kilogramih
     gender: { type: String, enum: ['male', 'female', 'other'] }, // Spol
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // References to other User documents
-    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    profilePhotoData: Buffer, // Kompresirana .dct datoteka profilne slike (shranjena direktno v bazi)
+    profilePhotoCompressed: { type: Boolean, default: false } // Označuje ali je profilna slika kompresirana
 });
 
 // Metode za shemo

@@ -37,7 +37,6 @@ const HomeScreen = () => {
         if (user) {
             try {
                 const response = await axios.get(`${API_BASE_URL}/activities/user/${user._id}`);
-                // Preveri, ali je response.data array
                 const activitiesData = Array.isArray(response.data) ? response.data : [];
                 const sortedActivities = activitiesData.sort((a, b) => {
                     const dateA = a.startTime ? new Date(a.startTime) : new Date(0);
@@ -47,14 +46,12 @@ const HomeScreen = () => {
                 setActivities(sortedActivities);
                 setError('');
             } catch (error) {
-                // Če je 404 ali prazen seznam, nastavi prazen array namesto errorja
                 if (error.response && error.response.status === 404) {
                     setActivities([]);
                     setError('');
                 } else {
                     setError('Error fetching activities');
                     console.error('Error fetching activities:', error);
-                    // Nastavi prazen array, da aplikacija ne crasne
                     setActivities([]);
                 }
             }
@@ -66,7 +63,6 @@ const HomeScreen = () => {
             fetchUsers();
             fetchActivities();
         } else {
-            // Če user ni definiran, resetiraj state
             setUsers([]);
             setActivities([]);
             setError('');

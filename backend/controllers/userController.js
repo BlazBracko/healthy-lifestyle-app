@@ -1,8 +1,39 @@
 const User = require('../models/User');
 const { Expo } = require('expo-server-sdk');
 const axios = require('axios');
+const { PythonShell } = require('python-shell');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
 let expo = new Expo();
+
+const profilePhotoStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const profilePhotoDir = 'profile-photos';
+        if (!fs.existsSync(profilePhotoDir)) {
+            fs.mkdirSync(profilePhotoDir, { recursive: true });
+        }
+        cb(null, profilePhotoDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${req.params.username}${path.extname(file.originalname)}`);
+    }
+});
+
+const profilePhotoFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed'), false);
+    }
+};
+
+exports.uploadProfilePhotoMulter = multer({ 
+    storage: profilePhotoStorage, 
+    fileFilter: profilePhotoFilter,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB omejitev velikosti slike
+});
 
 
 // Funkcija za pridobivanje vseh uporabnikov
@@ -39,7 +70,6 @@ exports.createUser = async (req, res) => {
         console.log("Attempting to create user...");
         const user = new User({ name, surname, username, email, password, deviceTokens: token ? [token] : [] });
 
-        // Assuming encryptPassword is an asynchronous method that hashes the password
         await user.encryptPassword(password);
 
         const newUser = await user.save();
@@ -289,5 +319,141 @@ exports.unfollowUser = async (req, res) => {
     } catch (error) {
         console.error('Failed to unfollow user:', error);
         res.status(500).json({ message: 'Failed to unfollow user', error: error.message });
+    }
+};
+
+// Upload profile photo
+exports.uploadProfilePhoto = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No image file uploaded' });
+        }
+
+        const username = req.params.username;
+        const imagePath = req.file.path;
+
+        // Preveri ali uporabnik obstaja
+        const user = await User.findOne({ username });
+        if (!user) {
+            // Izbriši uploadano sliko če uporabnik ne obstaja
+            fs.unlink(imagePath, (err) => {
+                if (err) console.error('Error deleting file:', err);
+            });
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Kompresiraj sliko z Python skripto
+        const compressScriptPath = path.join(__dirname, '../compress_profile_image.py');
+        const compressOptions = {
+            mode: 'text',
+            pythonOptions: ['-u'],
+            scriptPath: path.dirname(compressScriptPath),
+            args: [imagePath, '10'] // faktor 10 za dobro kakovost
+        };
+
+        const compressResults = await PythonShell.run('compress_profile_image.py', compressOptions);
+        
+        // Parse rezultat
+        let compressResult;
+        try {
+            const lastMessage = compressResults[compressResults.length - 1];
+            compressResult = JSON.parse(lastMessage);
+        } catch (parseError) {
+            console.error('Error parsing compression result:', parseError);
+            fs.unlink(imagePath, (err) => {
+                if (err) console.error('Error deleting file:', err);
+            });
+            return res.status(500).json({ message: 'Error compressing image' });
+        }
+
+        if (compressResult.error) {
+            fs.unlink(imagePath, (err) => {
+                if (err) console.error('Error deleting file:', err);
+            });
+            return res.status(500).json({ message: compressResult.error });
+        }
+
+        // Pretvori base64 v Buffer za shranjevanje v bazi
+        const compressedBuffer = Buffer.from(compressResult.compressed_data, 'base64');
+
+        // Shrani v bazo
+        user.profilePhotoData = compressedBuffer;
+        user.profilePhotoCompressed = true;
+        await user.save();
+
+        // Izbriši originalno sliko
+        fs.unlink(imagePath, (err) => {
+            if (err) console.error('Error deleting original image:', err);
+        });
+
+        res.status(200).json({ 
+            message: 'Profile photo uploaded successfully',
+            compressed_size: compressResult.compressed_size,
+            original_size: compressResult.original_size
+        });
+    } catch (error) {
+        console.error('Error uploading profile photo:', error);
+        
+        // Izbriši uploadano sliko pri napaki
+        if (req.file && req.file.path) {
+            fs.unlink(req.file.path, (err) => {
+                if (err) console.error('Error deleting file:', err);
+            });
+        }
+        
+        res.status(500).json({ message: 'Failed to upload profile photo', error: error.message });
+    }
+};
+
+// Get profile photo
+exports.getProfilePhoto = async (req, res) => {
+    try {
+        const username = req.params.username;
+        
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.profilePhotoData || !user.profilePhotoCompressed) {
+            return res.status(404).json({ message: 'Profile photo not found' });
+        }
+
+        // Pretvori Buffer v base64
+        const compressedBase64 = user.profilePhotoData.toString('base64');
+
+        // Dekompresiraj z Python skripto
+        const decompressScriptPath = path.join(__dirname, '../decompress_profile_image.py');
+        const decompressOptions = {
+            mode: 'text',
+            pythonOptions: ['-u'],
+            scriptPath: path.dirname(decompressScriptPath),
+            args: [compressedBase64]
+        };
+
+        const decompressResults = await PythonShell.run('decompress_profile_image.py', decompressOptions);
+        
+        // Parse rezultat
+        let decompressResult;
+        try {
+            const lastMessage = decompressResults[decompressResults.length - 1];
+            decompressResult = JSON.parse(lastMessage);
+        } catch (parseError) {
+            console.error('Error parsing decompression result:', parseError);
+            return res.status(500).json({ message: 'Error decompressing image' });
+        }
+
+        if (decompressResult.error) {
+            return res.status(500).json({ message: decompressResult.error });
+        }
+
+        // Vrni sliko kot base64
+        res.status(200).json({ 
+            image: decompressResult.image_base64,
+            format: decompressResult.format || 'png'
+        });
+    } catch (error) {
+        console.error('Error getting profile photo:', error);
+        res.status(500).json({ message: 'Failed to get profile photo', error: error.message });
     }
 };

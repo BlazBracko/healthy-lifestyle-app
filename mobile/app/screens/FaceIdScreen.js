@@ -27,20 +27,17 @@ const FaceIdScreen = () => {
   }, [cameraPermission, microphonePermission]);
 
   const handleVideoRecording = async () => {
-    // Prevent starting twice or before ready
     if (!cameraRef.current) {
       console.log('Camera ref missing');
       return;
     }
 
-    // Require camera ready for at least 1500ms to avoid Expo race
     const now = Date.now();
     if (!isCameraReady || now - cameraReadyAt < 1500) {
       console.log('Camera is not ready yet, waiting...');
       return;
     }
 
-    // Toggle stop
     if (isRecording) {
       stopRecording();
       return;
@@ -48,7 +45,6 @@ const FaceIdScreen = () => {
 
     setIsRecording(true);
     try {
-      // Extra settling time right before record
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const video = await cameraRef.current.recordAsync({
@@ -95,7 +91,7 @@ const FaceIdScreen = () => {
         body: formData,
         credentials: "include",
         headers: {
-          // Don't set Content-Type for FormData - let the browser set it with boundary
+          
         },
       });
   
@@ -154,7 +150,6 @@ const FaceIdScreen = () => {
         mode="video"
         onCameraReady={() => {
           console.log('Camera is ready');
-          // Add a longer delay to ensure camera is fully initialized
           setTimeout(() => {
             setCameraReadyAt(Date.now());
             setIsCameraReady(true);

@@ -22,6 +22,7 @@ function Profile() {
     });
     const [activities, setActivities] = useState([]);
     const [errors, setErrors] = useState('');
+    const [profilePhoto, setProfilePhoto] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -41,8 +42,26 @@ function Profile() {
                     });
                 })
                 .catch(error => setErrors('Failed to fetch profile'));
+
+            // Naloži profilno sliko
+            loadProfilePhoto();
         }
     }, [user]);
+
+    const loadProfilePhoto = async () => {
+        if (!user || !user.username) return;
+        
+        try {
+            const response = await axios.get(`http://localhost:3001/users/${user.username}/profile-photo`);
+            if (response.data && response.data.image) {
+                setProfilePhoto(`data:image/${response.data.format || 'png'};base64,${response.data.image}`);
+            }
+        } catch (error) {
+            if (error.response?.status !== 404) {
+                console.error('Error loading profile photo:', error);
+            }
+        }
+    };
 
     useEffect(() => {
         if (user) {
@@ -327,6 +346,15 @@ function Profile() {
             <FontAwesomeIcon icon={faEdit} size="lg" />
             </button>
             <div className="profile-details">
+                <div className="profile-photo-container">
+                    {profilePhoto ? (
+                        <img src={profilePhoto} alt="Profile" className="profile-photo-display" />
+                    ) : (
+                        <div className="profile-photo-placeholder-display">
+                            <span>{profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}</span>
+                        </div>
+                    )}
+                </div>
                 <div className="profile-name">
                     <h2>{`${profile.name} ${profile.surname}`}</h2>
                     <p>{profile.username}</p>

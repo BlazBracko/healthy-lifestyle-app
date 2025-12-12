@@ -20,6 +20,12 @@ router.post('/unfollow', userController.unfollowUser);
 //Login
 router.post('/login', userController.login);
 
+// Upload profilne slike (mora biti pred :id route)
+router.post('/:username/profile-photo', userController.uploadProfilePhotoMulter.single('photo'), userController.uploadProfilePhoto);
+
+// Pridobi profilno sliko (mora biti pred :id route)
+router.get('/:username/profile-photo', userController.getProfilePhoto);
+
 // Posodobi obstoječega uporabnika
 router.put('/:id', userController.updateUser);
 

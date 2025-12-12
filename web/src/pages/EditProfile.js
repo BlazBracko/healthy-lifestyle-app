@@ -19,6 +19,9 @@ function EditProfile() {
     });
     const [errors, setErrors] = useState('');
     const [success, setSuccess] = useState('');
+    const [profilePhoto, setProfilePhoto] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -37,8 +40,81 @@ function EditProfile() {
                     });
                 })
                 .catch(error => setErrors('Failed to fetch profile'));
+
+            // Naloži profilno sliko
+            loadProfilePhoto();
         }
     }, [user]);
+
+    const loadProfilePhoto = async () => {
+        if (!user || !user.username) return;
+        
+        try {
+            const response = await axios.get(`http://localhost:3001/users/${user.username}/profile-photo`);
+            if (response.data && response.data.image) {
+                setPhotoPreview(`data:image/${response.data.format || 'png'};base64,${response.data.image}`);
+            }
+        } catch (error) {
+            // Če slika ne obstaja, to ni napaka
+            if (error.response?.status !== 404) {
+                console.error('Error loading profile photo:', error);
+            }
+        }
+    };
+
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Validacija
+            if (file.size > 5 * 1024 * 1024) {
+                setErrors('Image size must be less than 5MB');
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                setErrors('Please select an image file');
+                return;
+            }
+
+            setProfilePhoto(file);
+            setErrors('');
+
+            // Preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhotoPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handlePhotoUpload = async () => {
+        if (!profilePhoto || !user || !user.username) {
+            setErrors('Please select an image to upload');
+            return;
+        }
+
+        setUploadingPhoto(true);
+        setErrors('');
+
+        const formData = new FormData();
+        formData.append('photo', profilePhoto);
+
+        try {
+            await axios.post(`http://localhost:3001/users/${user.username}/profile-photo`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            setSuccess('Profile photo uploaded successfully!');
+            setProfilePhoto(null);
+            // Osveži sliko
+            await loadProfilePhoto();
+        } catch (error) {
+            setErrors(error.response?.data?.message || 'Failed to upload profile photo');
+        } finally {
+            setUploadingPhoto(false);
+        }
+    };
 
     if(!user) return <p>Please login.</p>;
 
@@ -56,11 +132,9 @@ function EditProfile() {
         try {
             const res = await axios.put(`http://localhost:3001/users/${user._id}`, profile);
             setSuccess('Profile updated successfully!');
-            // Update user context with new data
             if (res.data) {
                 setUserContext({ ...user, ...res.data });
             }
-            // Navigate back to profile after 1.5 seconds
             setTimeout(() => {
                 navigate('/profile');
             }, 1500);
@@ -76,6 +150,42 @@ function EditProfile() {
                     <h1 className="edit-profile-title">Edit Profile</h1>
                     <p className="edit-profile-subtitle">Update your personal information</p>
                 </div>
+                
+                {/* Profile Photo Upload Section */}
+                <div className="profile-photo-section">
+                    <div className="profile-photo-preview">
+                        {photoPreview ? (
+                            <img src={photoPreview} alt="Profile" className="profile-photo-image" />
+                        ) : (
+                            <div className="profile-photo-placeholder">
+                                <span>{profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="profile-photo-upload">
+                        <input
+                            type="file"
+                            id="photo-upload"
+                            accept="image/*"
+                            onChange={handlePhotoChange}
+                            style={{ display: 'none' }}
+                        />
+                        <label htmlFor="photo-upload" className="photo-upload-button">
+                            {photoPreview ? 'Change Photo' : 'Upload Photo'}
+                        </label>
+                        {profilePhoto && (
+                            <button
+                                type="button"
+                                onClick={handlePhotoUpload}
+                                disabled={uploadingPhoto}
+                                className="photo-save-button"
+                            >
+                                {uploadingPhoto ? 'Uploading...' : 'Save Photo'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 <form className="edit-profile-form" onSubmit={handleSubmit}>
                     <div className="form-field">
                         <label>Name</label>
