@@ -2,10 +2,15 @@ const multer = require('multer');
 const path = require('path');
 const { PythonShell } = require('python-shell');
 const fs = require('fs');
+const { exec } = require('child_process');
 
 // Ensure directories exist
 const loginPhotoDir = 'login-photo';
 const uploadsDir = 'uploads';
+// Environment variable ali config za MPI
+// Nastavi na 'true' za uporabo MPI, 'false' za normalen zagon
+const useMPI = true;
+
 
 [loginPhotoDir, uploadsDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
@@ -52,15 +57,173 @@ const processVideo = (req, res) => {
 
   // Path and options for dataSet.py
   const dataSetScriptPath = path.join(__dirname, '../dataSet.py');
+  const scriptPath = path.dirname(dataSetScriptPath);
   const dataSetOptions = {
     mode: 'text',
     pythonOptions: ['-u'],
-    scriptPath: path.dirname(dataSetScriptPath),
+    scriptPath: scriptPath,
     args: [videoPath, username]
   };
 
-  // Running dataSet.py
-  PythonShell.run('dataSet.py', dataSetOptions)
+  // Function to continue with learn.py after dataSet.py finishes
+  const continueWithLearn = (dataSetResult) => {
+    // Path and options for learn.py
+    const learnScriptPath = path.join(__dirname, '../learn.py');
+    const learnOptions = {
+      mode: 'text',
+      pythonOptions: ['-u'],
+      scriptPath: path.dirname(learnScriptPath),
+      args: [username] 
+    };
+    
+    // Running learn.py
+    return PythonShell.run('learn.py', learnOptions)
+      .then(learnMessages => {
+        console.log('learn.py script finished');
+        console.log('learn.py output:', learnMessages);
+        
+        // Parse learn result
+        let learnResult = { success: true };
+        try {
+          if (learnMessages && learnMessages.length > 0) {
+            const lastMessage = learnMessages[learnMessages.length - 1];
+            if (lastMessage.trim().startsWith('{')) {
+              learnResult = JSON.parse(lastMessage);
+            }
+          }
+        } catch (parseError) {
+          console.log('learn.py did not return JSON, assuming success');
+        }
+
+        // Delete the uploaded video after processing
+        fs.unlink(videoPath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error('Error deleting the video:', unlinkErr);
+          } else {
+            console.log('Video deleted successfully:', videoPath);
+          }
+        });
+
+        // Send success response
+        res.json({
+          success: true,
+          message: 'Video processed and model trained successfully',
+          dataSetResult: dataSetResult,
+          learnResult: learnResult
+        });
+      })
+      .catch(learnError => {
+        console.error('Error running learn.py:', learnError);
+        
+        // Delete the uploaded video even on error
+        fs.unlink(videoPath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error('Error deleting the video:', unlinkErr);
+          }
+        });
+
+        res.status(500).json({ 
+          error: 'Error training model.',
+          details: learnError.message || 'Unknown error'
+        });
+      });
+  };
+
+  // Running dataSet.py or dataSet_mpi.py
+  let shouldUseNormalProcessing = true; // Default: uporabi normalen zagon
+  
+  if (useMPI) {
+    // Zagon z MPI
+    console.log('Starting MPI processing...');
+    const hostfilePath = path.join(scriptPath, 'hostfile.txt');
+    const mpiScriptPath = path.join(scriptPath, 'dataSet_mpi.py');
+    
+    // Preveri, ali hostfile in MPI skripta obstajata
+    let useMPIFallback = false;
+    if (!fs.existsSync(hostfilePath)) {
+      console.warn('hostfile.txt not found, falling back to normal processing');
+      console.warn('Expected at:', hostfilePath);
+      useMPIFallback = true;
+    } else if (!fs.existsSync(mpiScriptPath)) {
+      console.warn('dataSet_mpi.py not found, falling back to normal processing');
+      console.warn('Expected at:', mpiScriptPath);
+      useMPIFallback = true;
+    }
+    
+    if (!useMPIFallback) {
+      // Escape paths za shell command (za varnost)
+      const escapedVideoPath = videoPath.replace(/'/g, "'\\''");
+      const escapedMpiScript = mpiScriptPath.replace(/'/g, "'\\''");
+      
+      // OpenMPI 5.x na macOS ne podpira --hostfile z več nodi, uporabi colon syntax
+      // Uporabi deljen direktorij - kopiraj video na worker ali uporabi NFS
+      // Uporabi run_mpi_final.sh skripto, ki skrbi za vse poti in kopiranje
+      const runScriptPath = path.join(scriptPath, 'run_mpi_final.sh');
+      const escapedUsername = username.replace(/'/g, "'\\''");
+      const mpiCommand = `bash '${runScriptPath}' '${escapedVideoPath}' '${escapedUsername}'`;
+      console.log('MPI command:', mpiCommand);
+      
+      exec(mpiCommand, { cwd: scriptPath, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('MPI execution error:', error);
+          console.error('stderr:', stderr);
+          
+          // Delete the uploaded video on error
+          fs.unlink(videoPath, (unlinkErr) => {
+            if (unlinkErr) {
+              console.error('Error deleting the video:', unlinkErr);
+            }
+          });
+          
+          return res.status(500).json({ 
+            error: 'Error processing video with MPI.',
+            details: error.message || stderr || 'Unknown error'
+          });
+        }
+        
+        console.log('MPI stdout:', stdout);
+        if (stderr) {
+          console.log('MPI stderr:', stderr);
+        }
+        
+        // Parse MPI output (JSON status messages)
+        let dataSetResult = { success: true };
+        const lines = stdout.split('\n').filter(line => line.trim());
+        
+        try {
+          // Poišči zadnji JSON status
+          for (let i = lines.length - 1; i >= 0; i--) {
+            const line = lines[i].trim();
+            if (line.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(line);
+                if (parsed.status === 'completed' || parsed.status === 'done') {
+                  dataSetResult = parsed;
+                  break;
+                }
+              } catch (e) {
+                // Continue searching
+              }
+            }
+          }
+        } catch (parseError) {
+          console.log('Could not parse MPI output, assuming success');
+        }
+        
+        // Continue with learn.py
+        continueWithLearn(dataSetResult);
+      });
+      
+      shouldUseNormalProcessing = false; // MPI se izvaja, ne izvajaj normalnega zagona
+      return; // Exit early, exec callback will handle response
+    }
+    // Če je useMPIFallback = true, nadaljuje z normalnim zagonom spodaj (shouldUseNormalProcessing ostane true)
+  }
+  
+  // Normalen zagon (brez MPI) - samo če MPI ni aktiven ali če je fallback
+  if (shouldUseNormalProcessing) {
+    console.log('Starting normal (non-MPI) processing...');
+    PythonShell.run('dataSet.py', dataSetOptions)
     .then(dataSetMessages => {
       console.log('dataSet.py script finished');
       console.log('dataSet.py output:', dataSetMessages);
@@ -77,67 +240,9 @@ const processVideo = (req, res) => {
       } catch (parseError) {
         console.log('dataSet.py did not return JSON, assuming success');
       }
-
-      // Path and options for learn.py
-      const learnScriptPath = path.join(__dirname, '../learn.py');
-      const learnOptions = {
-        mode: 'text',
-        pythonOptions: ['-u'],
-        scriptPath: path.dirname(learnScriptPath),
-        args: [username] 
-      };
       
-      // Running learn.py
-      return PythonShell.run('learn.py', learnOptions)
-        .then(learnMessages => {
-          console.log('learn.py script finished');
-          console.log('learn.py output:', learnMessages);
-          
-          // Parse learn result
-          let learnResult = { success: true };
-          try {
-            if (learnMessages && learnMessages.length > 0) {
-              const lastMessage = learnMessages[learnMessages.length - 1];
-              if (lastMessage.trim().startsWith('{')) {
-                learnResult = JSON.parse(lastMessage);
-              }
-            }
-          } catch (parseError) {
-            console.log('learn.py did not return JSON, assuming success');
-          }
-
-          // Delete the uploaded video after processing
-          fs.unlink(videoPath, (unlinkErr) => {
-            if (unlinkErr) {
-              console.error('Error deleting the video:', unlinkErr);
-            } else {
-              console.log('Video deleted successfully:', videoPath);
-            }
-          });
-
-          // Send success response
-          res.json({
-            success: true,
-            message: 'Video processed and model trained successfully',
-            dataSetResult: dataSetResult,
-            learnResult: learnResult
-          });
-        })
-        .catch(learnError => {
-          console.error('Error running learn.py:', learnError);
-          
-          // Delete the uploaded video even on error
-          fs.unlink(videoPath, (unlinkErr) => {
-            if (unlinkErr) {
-              console.error('Error deleting the video:', unlinkErr);
-            }
-          });
-
-          res.status(500).json({ 
-            error: 'Error training model.',
-            details: learnError.message || 'Unknown error'
-          });
-        });
+      // Continue with learn.py
+      continueWithLearn(dataSetResult);
     })
     .catch(dataSetError => {
       console.error('Error running dataSet.py:', dataSetError);
@@ -154,6 +259,7 @@ const processVideo = (req, res) => {
         details: dataSetError.message || 'Unknown error'
       });
     });
+  }
 };
 
 const processPhoto = (req, res) => {
