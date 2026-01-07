@@ -36,7 +36,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,12 +46,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 TIM_HandleTypeDef htim2;
-TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart3;
 
 
 /* USER CODE BEGIN PV */
+
 
 /*static const char http_hello[] =
 "HTTP/1.1 200 OK\r\n"
@@ -106,25 +105,17 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 
+
+//static bool ESP_SendHTTP(int conn_id, const char *page);
+
+
+void BlockPosting(uint32_t ms);
+uint8_t PostingAllowed(void);
+void parse_query_kv(char *query);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  if (htim->Instance == TIM2)
-  {
-      if (++ms_cnt >= 50)
-      {
-    	  send_tick_50ms = 1;
-          ms_cnt = 0;
-      }
-  }
-}
-
 
 
 //------------------------------------------------------------
@@ -292,8 +283,33 @@ typedef enum {
 	    return false;
 	}
 
+void ESP_StartWebServer(void)
+{
+    uint8_t resp[256];
+    uint32_t rlen;
+
+    CDC_Print("Starting web server...\r\n");
+
+    // ---- FORCE ACTIVE RECEIVE MODE (IMPORTANT) ----
+    ESP_SendCmd_Wait(&huart3, "AT+CIPMODE=0",     "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+    ESP_SendCmd_Wait(&huart3, "AT+CIPRECVMODE=0", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+    ESP_SendCmd_Wait(&huart3, "AT+CIPDINFO=1",    "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+    ESP_SendCmd_Wait(&huart3, "AT+CIPSTO=60",     "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+
+    // Disable server if it was already running (safe reset)
+    ESP_SendCmd_Wait(&huart3, "AT+CIPSERVER=0", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+
+    // Enable multiple connections
+    ESP_SendCmd_Wait(&huart3, "AT+CIPMUX=1", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+
+    // Start server on port 80
+    ESP_SendCmd_Wait(&huart3, "AT+CIPSERVER=1,80", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+
+    CDC_Print("Web server running on port 80\r\n");
+}
+
 //test OK response AT
-bool ESP_SendAT_OK(UART_HandleTypeDef *huart, uint32_t timeout_ms)
+/*bool ESP_SendAT_OK(UART_HandleTypeDef *huart, uint32_t timeout_ms)
 {
     // Clear RX buffer/state
     ESP_ClearRx();
@@ -319,7 +335,7 @@ bool ESP_SendAT_OK(UART_HandleTypeDef *huart, uint32_t timeout_ms)
     }
 
     return false; // timeout
-}
+}*/
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -389,7 +405,180 @@ static bool ESP_SendData(uint8_t cid, const char *data)
     return true;
 }
 
+void ESP_Pump(void)
+{
+    // Look for +IPD,<id>,
+    char *p = strstr((char*)esp_rx, "+IPD,");
+    if (!p) return;
 
+    // Parse connection ID: +IPD,<id>,<len>:...
+    int cid = -1;
+    if (sscanf(p, "+IPD,%d,", &cid) != 1) {
+        ESP_ClearRx();
+        return;
+    }
+
+    if (cid >= 0 && cid <= 3) {
+        // any web traffic -> block posting for a short time
+        BlockPosting(POST_BLOCK_MS);
+    }
+
+    if (cid == 4) {
+            // This is the response to our outgoing POST; do NOT close it here.
+            // Optionally print it:
+            //CDC_Print("CLIENT RX:\r\n"); CDC_Print(p); CDC_Print("\r\n");
+            ESP_ClearRx();
+            return;
+        }
+    // ---------- 1) Handle SUBMIT: GET /set?ssid=...&pass=... ----------
+    if (strstr(p, "GET /set?") != NULL)
+    {
+        // DEBUG: show the request chunk we have
+        CDC_Print("REQ:\r\n");
+        CDC_Print(p);
+        CDC_Print("\r\n");
+
+        // URL looks like: GET /set?ssid=AAA&pass=BBB HTTP/1.1
+        char *qs = strstr(p, "GET /set?");
+        qs += strlen("GET /set?");
+
+        // Find end of URL: prefer " HTTP/" (robust), fallback to space
+        char *end = strstr(qs, " HTTP/");
+        if (!end) end = strchr(qs, ' ');
+
+        if (!end)
+        {
+            CDC_Print("PARSE: no end marker yet\r\n");
+            // Do NOT clear rx here; wait for more data next ESP_Pump() call
+            return;
+        }
+
+        char query[256];
+        int n = (int)(end - qs);
+        if (n < 0) n = 0;
+        if (n > (int)sizeof(query) - 1) n = sizeof(query) - 1;
+        memcpy(query, qs, n);
+        query[n] = 0;
+
+        CDC_Print("QUERY:\r\n");
+        CDC_Print(query);
+        CDC_Print("\r\n");
+
+        parse_query_kv(query);
+
+        CDC_Print("NEW SSID: "); CDC_Print(wifi_ssid); CDC_Print("\r\n");
+        CDC_Print("NEW PASS: "); CDC_Print(wifi_pass); CDC_Print("\r\n");
+
+        wifi_reconfig = 1;
+        server_started = 0;
+
+        // Reply "Saved"
+        const char *body =
+            "<!DOCTYPE html><html><body>"
+            "<h2>Saved</h2>"
+            "<p>Reconnecting...</p>"
+            "</body></html>";
+
+        char resp[1024];
+        int body_len = (int)strlen(body);
+
+        snprintf(resp, sizeof(resp),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Connection: close\r\n"
+            "Content-Length: %d\r\n"
+            "\r\n"
+            "%s",
+            body_len, body);
+        ESP_ClearRx();
+        (void)ESP_SendData((uint8_t)cid, resp);
+
+        // Close
+        {
+            char close_cmd[32];
+            ESP_ClearRx();
+            snprintf(close_cmd, sizeof(close_cmd), "AT+CIPCLOSE=%d\r\n", cid);
+            HAL_UART_Transmit(&huart3, (uint8_t*)close_cmd, strlen(close_cmd), 1000);
+        }
+
+        ESP_ClearRx();
+        BlockPosting(POST_BLOCK_MS);
+        return;
+    }
+
+    // ---------- 2) Serve ROOT page: GET / HTTP ----------
+    if (strstr(p, "GET / HTTP") != NULL)
+    {
+        const char *body =
+            "<!DOCTYPE html>"
+            "<html><body>"
+            "<h2>WiFi Setup</h2>"
+            "<form action=\"/set\" method=\"get\">"
+            "SSID:<br><input name=\"ssid\"><br>"
+            "PASS:<br><input type=\"password\" name=\"pass\"><br><br>"
+            "<input type=\"submit\" value=\"Save\">"
+            "</form>"
+            "</body></html>";
+
+        // BIGGER BUFFER to avoid truncation/hang
+        char resp[1024];
+        int body_len = (int)strlen(body);
+
+        snprintf(resp, sizeof(resp),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Connection: close\r\n"
+            "Content-Length: %d\r\n"
+            "\r\n"
+            "%s",
+            body_len, body);
+        ESP_ClearRx();
+        (void)ESP_SendData((uint8_t)cid, resp);
+
+        // Close
+        {
+            char close_cmd[32];
+            ESP_ClearRx();
+            snprintf(close_cmd, sizeof(close_cmd), "AT+CIPCLOSE=%d\r\n", cid);
+            HAL_UART_Transmit(&huart3, (uint8_t*)close_cmd, strlen(close_cmd), 1000);
+        }
+
+        ESP_ClearRx();
+        BlockPosting(POST_BLOCK_MS);
+        return;
+    }
+
+    // ---------- 3) Anything else: close ----------
+    {
+        char close_cmd[32];
+        ESP_ClearRx();
+        snprintf(close_cmd, sizeof(close_cmd), "AT+CIPCLOSE=%d\r\n", cid);
+        HAL_UART_Transmit(&huart3, (uint8_t*)close_cmd, strlen(close_cmd), 1000);
+        ESP_ClearRx();
+    }
+}
+
+void parse_query_kv(char *query)
+{
+    char *saveptr = NULL;
+    char *tok = strtok_r(query, "&", &saveptr);
+
+    while (tok)
+    {
+        if (strncmp(tok, "ssid=", 5) == 0)
+        {
+            strncpy(wifi_ssid, tok + 5, sizeof(wifi_ssid) - 1);
+            wifi_ssid[sizeof(wifi_ssid) - 1] = 0;
+        }
+        else if (strncmp(tok, "pass=", 5) == 0)
+        {
+            strncpy(wifi_pass, tok + 5, sizeof(wifi_pass) - 1);
+            wifi_pass[sizeof(wifi_pass) - 1] = 0;
+        }
+
+        tok = strtok_r(NULL, "&", &saveptr);
+    }
+}
 
 static int ESP_WaitConnectResult(uint32_t timeout_ms)
 {
@@ -471,6 +660,18 @@ static bool ESP_HTTP_POST_KeepAlive(uint8_t link_id,
     return true;
 }
 
+void BlockPosting(uint32_t ms)
+{
+    post_blocked = 1;
+    post_block_until_ms = HAL_GetTick() + ms;
+}
+uint8_t PostingAllowed(void)
+{
+    if (post_blocked && (int32_t)(HAL_GetTick() - post_block_until_ms) >= 0) {
+        post_blocked = 0;
+    }
+    return (post_blocked == 0);
+}
 
 
 /* USER CODE END 0 */
@@ -512,6 +713,7 @@ int main(void)
   ESP_RxStart(); // start the reading from uart
   /* USER CODE BEGIN 2 */
 
+   
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -525,8 +727,6 @@ int main(void)
       /* USER CODE BEGIN WHILE */
       while (1)
       {
-    	 
-
     	  if(test2){
     	  if(auth && !done && !wifi_reconfig){
     		  CDC_Print("\r\n=== ESP INIT START ===\r\n");
@@ -584,9 +784,28 @@ int main(void)
     	        HAL_Delay(1);   // or 5ms
     	  }
 
+    	  if(done && !server_started){
+    		  ESP_StartWebServer();
+    		  server_started = 1;
+    	  }
+
     	  //static uint32_t t_check = 0;
-    	  if(test2){
-    		  
+    	  if(server_started){
+    		  /*if(HAL_GetTick() - t_check > 3000){
+
+    			  t_check = HAL_GetTick();
+    			      uint8_t resp[512]; uint32_t rlen;
+
+    			      ESP_SendCmd_Wait(&huart3, "AT+CIPSTATUS", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+    			      CDC_Print("CIPSTATUS:\r\n");
+    			      CDC_Print((char*)resp);
+    			      CDC_Print("\r\n");
+    		  }*/
+
+    		  if (!esp_busy) {
+    		      ESP_Pump();  // only serve web when not doing client transaction
+    		  }
+
     		  if(timer2){
     			  HAL_TIM_Base_Start_IT(&htim2);
     			  CDC_Print("Timer2 start...\r\n");
@@ -595,6 +814,15 @@ int main(void)
     		  if (send_tick_50ms)
     		  {
     		      send_tick_50ms = 0;
+
+    		      // if web traffic happened recently, do not post now
+    		      if (!PostingAllowed()) {
+    		          // optional: debug
+    		          // CDC_Print("POST blocked (web active)\r\n");
+    		          continue;
+    		      }
+
+    		      esp_busy = 1;
 
     		      if (!link_ok) {
     		    	  CDC_Print("connecting");
@@ -612,9 +840,40 @@ int main(void)
     		          HAL_UART_Transmit(&huart3, (uint8_t*)"AT+CIPCLOSE=4\r\n", 14, 1000);
     		      }
 
-    		      
+    		      esp_busy = 0;
     		  }
     	  }
+
+
+    	  if (wifi_reconfig)
+		  {
+    		  HAL_TIM_Base_Stop_IT(&htim2);
+    		  timer2 = 1;
+			  CDC_Print("Reconfiguring WiFi...\r\n");
+
+			  // Stop server cleanly
+			  ESP_SendCmd_Wait(&huart3, "AT+CIPSERVER=0", "OK", "ERROR", 1000, NULL, 0, NULL);
+
+			  for (int i = 0; i < 5; i++)   // ESP supports up to 5 links (0–4)
+			      {
+			          char cmd[32];
+			          ESP_ClearRx();
+			          snprintf(cmd, sizeof(cmd), "AT+CIPCLOSE=%d\r\n", i);
+			          HAL_UART_Transmit(&huart3, (uint8_t*)cmd, strlen(cmd), 500);
+			          HAL_Delay(20);
+			      }
+
+
+			  // Optional: disconnect AP
+			  ESP_SendCmd_Wait(&huart3, "AT+CWQAP", "OK", "ERROR", 1000, NULL, 0, NULL);
+
+			  done = 0;
+			  server_started = 0;
+			  wifi_reconfig = 0;
+			  link_ok = 0;
+
+			  HAL_Delay(500);
+		  }
     	  HAL_Delay(1);
 	  }
 
