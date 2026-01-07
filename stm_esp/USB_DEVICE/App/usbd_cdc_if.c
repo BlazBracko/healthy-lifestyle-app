@@ -32,6 +32,9 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 volatile uint8_t auth = 0;
+volatile uint8_t data_recv_done = 0;
+volatile uint32_t data_received = 0;
+uint8_t data[DATA_MAX_LEN];
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -259,29 +262,63 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-	//copy buffer
-		uint32_t f;
-		uint32_t len = *Len;
-		for(f =0; f < *Len;f++){
-			UserTxBufferFS[f] = Buf[f];
-		}
 
-		// Strip any trailing CR or LF
-	    while (len && (UserTxBufferFS[len - 1] == '\r' || UserTxBufferFS[len - 1] == '\n'))
-	    {
-	        len--;
-	    }
-	    UserTxBufferFS[len] = '\0';
+  for (uint32_t i = 0; i < *Len; i++)
+  {
+      uint8_t c = Buf[i];
 
-	    //handshake
-	    if (strcmp((char*)UserTxBufferFS, "29453") == 0)
-	    {
-	    	auth = 1;
-	        const char reply[] = "29454\r\n";
-	        CDC_Transmit_FS((uint8_t*)reply, sizeof(reply) - 1);
-	    }
+      // Ignore carriage return
+      if (c == '\r')
+          continue;
+
+      // End of line
+      if (c == '\n')
+      {
+          // Null-terminate buffer (safe)
+          if (data_received < DATA_MAX_LEN)
+              data[data_received] = 0;
+
+          // ---------- AUTH HANDSHAKE ----------
+          if (!auth)
+          {
+              if (strcmp((char*)data, "29453") == 0)
+              {
+                  auth = 1;
+                  const char reply[] = "29454\r\n";
+                  while (CDC_Transmit_FS((uint8_t*)reply, sizeof(reply) - 1) == USBD_BUSY) { }
+              }
+
+              // Reset buffer after auth attempt
+              data_received = 0;
+          }
+          else
+          {
+              // Authenticated command ready
+              data_recv_done = 1;
+          }
+
+          break;
+      }
+
+      // Store character if space left
+      if (data_received < DATA_MAX_LEN - 1)
+      {
+          data[data_received++] = c;
+      }
+      else
+      {
+          // Overflow protection
+          data[data_received] = 0;
+          data_recv_done = 1;
+          break;
+      }
+  }
+
+  // Re-arm USB OUT endpoint
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  return (USBD_OK);
+
+  return USBD_OK;
   /* USER CODE END 6 */
 }
 

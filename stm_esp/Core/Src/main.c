@@ -18,11 +18,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usbd_cdc_if.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stddef.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,9 +37,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-
-// Filter parameters
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,20 +45,294 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
+SPI_HandleTypeDef hspi1;
+
+TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
+
+UART_HandleTypeDef huart3;
 
 
 /* USER CODE BEGIN PV */
 
+
+/*static const char http_hello[] =
+"HTTP/1.1 200 OK\r\n"
+"Content-Type: text/html\r\n"
+"Connection: close\r\n"
+"Content-Length: 46\r\n"
+"\r\n"
+"<!DOCTYPE html><html><body>Hello</body></html>";*/
+
+//char wifi_ssid[64] = "Stan6";
+//char wifi_pass[64] = "stanovanje6";
+char wifi_ssid[64] = "iPhones";
+char wifi_pass[64] = "picimiki123456";
+//char wifi_ssid[64] = "iPhone";
+//char wifi_pass[64] = "klobasa4444";
+uint8_t done = 0;
+uint8_t server_started = 0;
+uint8_t wifi_reconfig = 0;   // NEW flag
+
+#define ESP_RX_SZ 4096
+static uint8_t  esp_rx[ESP_RX_SZ];
+static uint32_t esp_rx_len = 0;
+
+volatile uint8_t esp_got_prompt = 0;
+volatile uint8_t esp_send_ok    = 0;
+volatile uint8_t esp_error      = 0;
+
+static uint8_t rx_byte;
+
+volatile uint8_t  send_tick_50ms = 0;
+volatile uint8_t ms_cnt  = 0;
+
+volatile uint8_t esp_busy = 0;
+volatile uint8_t link_ok = 0;
+
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
+static void MX_USART3_UART_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
+
+
+
+//static bool ESP_SendHTTP(int conn_id, const char *page);
+
+
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// Pavza, s katero omogocimo pravilno delovanje avtomatskega testa
+
+
+//------------------------------------------------------------
+
+void CDC_Print(const char *s)
+{
+  while (CDC_Transmit_FS((uint8_t*)s, strlen(s)) == USBD_BUSY) {}
+}
+
+//------------------------------------------------------------
+
+void ESP_ClearRx(void){
+	esp_rx_len = 0;
+	esp_rx[0] = 0;
+}
+
+
+
+static bool ESP_SendCmd_Wait(UART_HandleTypeDef *huart,const char *cmd,const char *ok_str, const char *err_str,uint32_t timeout_ms,
+                            uint8_t *resp_out, uint32_t resp_out_sz,uint32_t *resp_len_out)
+{
+    if (resp_len_out) *resp_len_out = 0;
+
+    ESP_ClearRx();  // <-- FLUSH before every command
+
+    // send "cmd\r\n"
+    char line[256];
+    snprintf(line, sizeof(line), "%s\r\n", cmd);
+    HAL_UART_Transmit(huart, (uint8_t*)line, strlen(line), 1000);
+
+    uint32_t t0 = HAL_GetTick();
+
+    while ((HAL_GetTick() - t0) < timeout_ms)
+    {
+        // buffer is already null-terminated in ISR, but keep safe
+        uint32_t len = esp_rx_len;
+        if (len >= ESP_RX_SZ) len = ESP_RX_SZ - 1;
+        esp_rx[len] = 0;
+
+        if (ok_str && strstr((char*)esp_rx, ok_str))
+            goto done_ok;
+
+        if (err_str && strstr((char*)esp_rx, err_str))
+            goto done_err;
+
+        HAL_Delay(1);
+    }
+
+done_err:
+    // copy response (optional)
+    if (resp_out && resp_out_sz)
+    {
+        uint32_t cpy = (esp_rx_len < resp_out_sz - 1) ? esp_rx_len : (resp_out_sz - 1);
+        memcpy(resp_out, esp_rx, cpy);
+        resp_out[cpy] = 0;
+        if (resp_len_out) *resp_len_out = cpy;
+    }
+    return false;
+
+done_ok:
+    if (resp_out && resp_out_sz)
+    {
+        uint32_t cpy = (esp_rx_len < resp_out_sz - 1) ? esp_rx_len : (resp_out_sz - 1);
+        memcpy(resp_out, esp_rx, cpy);
+        resp_out[cpy] = 0;
+        if (resp_len_out) *resp_len_out = cpy;
+    }
+    return true;
+}
+
+// ====== ESP init sequence ======
+
+typedef enum {
+		ESP_INIT_OK = 0,
+		ESP_INIT_NO_AT,
+		ESP_INIT_WIFI_MODE_FAIL,
+		ESP_INIT_JOIN_FAIL,
+		ESP_INIT_NO_IP
+	} esp_init_status_t;
+
+	void ESP_RxStart(void)
+	{
+	    ESP_ClearRx();
+	    HAL_UART_Receive_IT(&huart3, &rx_byte, 1);
+	}
+
+	esp_init_status_t ESP_Init(const char *ssid, const char *pass)
+	{
+	    uint8_t  resp[512];
+	    uint32_t rlen;
+
+	    // 1) AT check (retry a few times)
+	    for (int attempt = 0; attempt < 5; attempt++)
+	    {
+	        if (ESP_SendCmd_Wait(&huart3, "AT", "OK", "ERROR", 500, resp, sizeof(resp), &rlen))
+	            goto at_ok;
+
+	        HAL_Delay(200);
+	    }
+	    return ESP_INIT_NO_AT;
+
+	at_ok:
+	    // 2) Echo off (optional)
+	    ESP_SendCmd_Wait(&huart3, "ATE0", "OK", "ERROR", 500, resp, sizeof(resp), &rlen);
+
+	    // 3) Station mode
+	    if (!ESP_SendCmd_Wait(&huart3, "AT+CWMODE=1", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen))
+	        return ESP_INIT_WIFI_MODE_FAIL;
+
+	    // 4) Join AP
+	    char join_cmd[256];
+	    snprintf(join_cmd, sizeof(join_cmd), "AT+CWJAP=\"%s\",\"%s\"", ssid, pass);
+
+	    if (!ESP_SendCmd_Wait(&huart3, join_cmd, "OK", "FAIL", 15000, resp, sizeof(resp), &rlen))
+	        return ESP_INIT_JOIN_FAIL;
+
+	    // 5) Confirm IP
+	    if (!ESP_SendCmd_Wait(&huart3, "AT+CIFSR", "STAIP", "ERROR", 3000, resp, sizeof(resp), &rlen))
+	        return ESP_INIT_NO_IP;
+
+	    return ESP_INIT_OK;
+	}
+
+	static bool ESP_GetAndPrintIP(void)
+	{
+	    // Send command (and flush)
+	    ESP_ClearRx();
+	    HAL_UART_Transmit(&huart3, (uint8_t*)"AT+CIFSR\r\n", 10, 1000);
+
+	    uint32_t t0 = HAL_GetTick();
+	    while ((HAL_GetTick() - t0) < 3000)
+	    {
+	        // make sure it's terminated
+	        uint32_t len = esp_rx_len;
+	        if (len >= ESP_RX_SZ) len = ESP_RX_SZ - 1;
+	        esp_rx[len] = 0;
+
+	        // find STAIP,"
+	        char *p = strstr((char*)esp_rx, "STAIP,\"");
+	        if (p)
+	        {
+	            p += strlen("STAIP,\"");
+
+	            // find closing quote after IP
+	            char *q = strchr(p, '"');
+	            if (q && q > p)
+	            {
+	                char ip[32];
+	                int n = (int)(q - p);
+	                if (n > (int)sizeof(ip) - 1) n = sizeof(ip) - 1;
+
+	                memcpy(ip, p, n);
+	                ip[n] = 0;
+
+	                CDC_Print(ip);
+	                CDC_Print("\r\n");   // use CRLF, not \n\r
+	                return true;
+	            }
+	        }
+
+	        HAL_Delay(1);
+	    }
+
+	    CDC_Print("ESP IP not available yet\r\n");
+	    return false;
+	}
+
+
+
+//test OK response AT
+bool ESP_SendAT_OK(UART_HandleTypeDef *huart, uint32_t timeout_ms)
+{
+    // Clear RX buffer/state
+    ESP_ClearRx();
+
+    // Send plain "AT"
+    const char at_cmd[] = "AT\r\n";
+    HAL_UART_Transmit(huart, (uint8_t*)at_cmd, sizeof(at_cmd) - 1, 1000);
+
+    uint32_t t0 = HAL_GetTick();
+
+    // Wait until "OK" is seen in rx buffer (or timeout)
+    while ((HAL_GetTick() - t0) < timeout_ms)
+    {
+        // Ensure null-terminated so strstr is safe
+        uint32_t len = esp_rx_len;
+        if (len >= (ESP_RX_SZ - 1)) len = ESP_RX_SZ - 1;
+        esp_rx[len] = 0;
+
+        if (strstr((char*)esp_rx, "OK") != NULL)
+            return true;
+
+        HAL_Delay(1);
+    }
+
+    return false; // timeout
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart == &huart3)
+    {
+        if (esp_rx_len < (ESP_RX_SZ - 1))
+        {
+            esp_rx[esp_rx_len++] = rx_byte;
+            esp_rx[esp_rx_len] = 0; // keep it a C-string
+        }
+        // else: buffer full, you can ignore new bytes or wrap
+
+        HAL_UART_Receive_IT(&huart3, &rx_byte, 1);
+    }
+}
+
+
+
+
 
 /* USER CODE END 0 */
 
@@ -94,13 +369,117 @@ int main(void)
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
   //MX_TIM3_Init();
+  MX_TIM2_Init();
+  MX_USART3_UART_Init();
+  ESP_RxStart(); // start the reading from uart
   /* USER CODE BEGIN 2 */
 
 
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+
+    uint8_t timer2 = 1;
+    //uint8_t test = 1;
+    uint8_t test2 = 1;
+
+      /* USER CODE BEGIN WHILE */
       while (1)
       {
-        
-      }
+    	 
+
+    	  if(test2){
+    	  if(auth && !done && !wifi_reconfig){
+    		  CDC_Print("\r\n=== ESP INIT START ===\r\n");
+
+    		      esp_init_status_t st = ESP_Init(wifi_ssid, wifi_pass);
+
+    		          if (st == ESP_INIT_OK)
+    		          {
+    		        	  //uint8_t resp[512];
+    		        	  //uint32_t rlen;
+
+    		        	  ESP_GetAndPrintIP();
+
+    		        	  //ESP_SendCmd_Wait(&huart3, "AT+CWJAP?", "OK", "ERROR", 2000, resp, sizeof(resp), &rlen);
+    		        	  //CDC_Print((char*)resp);
+    		              done = 1;
+
+    		          }
+    		          else
+    		          {
+    		              CDC_Print("ESP INIT FAILED: ");
+
+    		              switch (st)
+    		              {
+    		                  case ESP_INIT_NO_AT:
+    		                      CDC_Print("No AT response\r\n");
+    		                      break;
+
+    		                  case ESP_INIT_WIFI_MODE_FAIL:
+    		                      CDC_Print("Failed to set WiFi mode\r\n");
+    		                      break;
+
+    		                  case ESP_INIT_JOIN_FAIL:
+    		                      CDC_Print("Failed to join AP\r\n");
+    		                      break;
+
+    		                  case ESP_INIT_NO_IP:
+    		                      CDC_Print("Connected but no IP\r\n");
+    		                      break;
+
+    		                  default:
+    		                      CDC_Print("Unknown error\r\n");
+    		                      break;
+    		              }
+    		              HAL_Delay(2000);
+    		          }
+
+    		          CDC_Print("======================\r\n");
+    		  /*if (ESP_SendAT_OK(&huart3, 1000)) {
+    		      CDC_Print("ESP OK\r\n");
+    		  } else {
+    		      CDC_Print("ESP TIMEOUT\r\n");
+    		  }*/
+    	  }else {
+    	        HAL_Delay(1);   // or 5ms
+    	  }
+
+    	
+
+    	  //static uint32_t t_check = 0;
+    	  if(test2){
+    		  /*if(HAL_GetTick() - t_check > 3000){
+
+    			  t_check = HAL_GetTick();
+    			      uint8_t resp[512]; uint32_t rlen;
+
+    			      ESP_SendCmd_Wait(&huart3, "AT+CIPSTATUS", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
+    			      CDC_Print("CIPSTATUS:\r\n");
+    			      CDC_Print((char*)resp);
+    			      CDC_Print("\r\n");
+    		  }*/
+
+    		  if (send_tick_50ms)
+    		  {
+            bool r = ESP_SendAT_OK(&huart3,500);
+
+    		    if(r){
+              CDC_Print("OK");
+            }else{
+              CDC_Print("ERROR");
+            }
+    		  }
+    	  }
+    	  HAL_Delay(1);
+	  }
+
+   }
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+
   /* USER CODE END 3 */
 }
 
@@ -143,7 +522,9 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_I2C1;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART3
+                              |RCC_PERIPHCLK_I2C1;
+  PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
   PeriphClkInit.USBClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
@@ -241,6 +622,52 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 599;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 119;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+  HAL_NVIC_SetPriority(TIM2_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(TIM2_IRQn);
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief TIM3 Initialization Function
   * @param None
   * @retval None
@@ -287,6 +714,41 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -294,6 +756,9 @@ static void MX_TIM3_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -302,47 +767,51 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /* --- Output pins (LEDs, CS) --- */
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin|LD4_Pin|LD3_Pin|LD5_Pin
                           |LD7_Pin|LD9_Pin|LD10_Pin|LD8_Pin
                           |LD6_Pin, GPIO_PIN_RESET);
 
-  /* --- Other gyro pins as events only --- */
-  GPIO_InitStruct.Pin = DRDY_Pin|MEMS_INT3_Pin|MEMS_INT4_Pin|MEMS_INT1_Pin;
+  /*Configure GPIO pins : DRDY_Pin MEMS_INT3_Pin MEMS_INT4_Pin MEMS_INT1_Pin
+                           MEMS_INT2_Pin */
+  GPIO_InitStruct.Pin = DRDY_Pin|MEMS_INT3_Pin|MEMS_INT4_Pin|MEMS_INT1_Pin
+                          |MEMS_INT2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /* --- MEMS_INT2 (PE1) real EXTI interrupt --- */
-  GPIO_InitStruct.Pin = MEMS_INT2_Pin;       // GPIO_PIN_1
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+	GPIO_InitStruct.Pin = MEMS_INT2_Pin;       // GPIO_PIN_1
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /* --- CS pin --- */
+  /*Configure GPIO pin : CS_I2C_SPI_Pin */
   GPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(CS_I2C_SPI_GPIO_Port, &GPIO_InitStruct);
 
-  /* --- User button --- */
+  /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /* --- LEDs --- */
+  /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD7_Pin
+                           LD9_Pin LD10_Pin LD8_Pin LD6_Pin */
   GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin|LD5_Pin|LD7_Pin
-                        |LD9_Pin|LD10_Pin|LD8_Pin|LD6_Pin;
+                          |LD9_Pin|LD10_Pin|LD8_Pin|LD6_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /* --- Enable EXTI line 1 interrupt --- */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
   HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */

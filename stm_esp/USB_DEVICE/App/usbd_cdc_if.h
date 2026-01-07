@@ -65,7 +65,11 @@
   */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
+#define DATA_MAX_LEN 100
  extern volatile uint8_t auth;
+ extern volatile uint8_t data_recv_done;
+ extern volatile uint32_t data_received;
+ extern uint8_t data[];
 /* USER CODE END EXPORTED_TYPES */
 
 /**
