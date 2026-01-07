@@ -1,0 +1,38 @@
+.planeViewer {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.planeHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+
+.planeTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.planeSub {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.planeCanvasWrap {
+  width: 100%;
+  height: 420px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b0f19;
+}
+
+/* Canvas will inherit container size */
+.planeCanvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* You can scale/position the model here by changing the group props in JS.
+   CSS cannot directly scale the 3D object; that's done in JS. */

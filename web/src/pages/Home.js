@@ -5,7 +5,9 @@ import axios from 'axios';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './ActivitiesList.css';
-import './Home.css'; 
+import './Home.css';
+import PlaneViewer from "../components/PlaneViewer";
+
 
 function Home() {
     const { user } = useContext(UserContext);
@@ -83,6 +85,9 @@ function Home() {
     if (!user) {
         return (
             <div className="landing-container">
+                <div style={{ marginBottom: 24 }}>
+                    <PlaneViewer deviceId="esp32-01" apiBase="http://localhost:3001" pollMs={100} />
+                </div>
                 <section className="hero-section">
                     <div className="hero-content">
                         <div className="hero-icon">🏃</div>
@@ -163,6 +168,9 @@ function Home() {
     return (
         <div className="main-container">
             <div className="activities-container">
+                <div style={{ marginBottom: 24 }}>
+                     <PlaneViewer deviceId="esp32-01" apiBase="http://localhost:3001" pollMs={100} />
+                </div>
                 <p>Other People's Activities</p>
                 {activities.length > 0 ? (
                     <ul className="activities-list">

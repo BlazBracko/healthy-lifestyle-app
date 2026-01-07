@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 //const mqtt = require('mqtt');
+const morgan = require("morgan");
+
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -45,6 +47,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const sensorRoutes = require('./routes/sensorRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');
 const recognitionRoutes = require('./routes/recognitionRoutes');
+const gyroRoutes = require("./routes/gyroRoutes");
 
 // Middleware
 app.use(cors({
@@ -65,6 +68,7 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
 
 // Default route
 app.get('/', (req, res) => {
@@ -80,6 +84,7 @@ app.use('/messages', messageRoutes);
 app.use('/sensors', sensorRoutes);
 app.use('/weathers', weatherRoutes);
 app.use('/recognize', recognitionRoutes);
+app.use("/gyro", gyroRoutes);
 
 // Error handler for 404 - Not Found
 app.use((req, res, next) => {
