@@ -36,6 +36,12 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define GYRO_SENS_500DPS  (0.0175f)
+
+// Filter parameters
+#define GYRO_FS_HZ         (190.0f)      // sampling frequency (Hz) - prilagodi 190 ali 200
+#define FILTER_FC_HZ       (20.0f)        // cutoff frequency (Hz) - spreminjaj za nalogo
+#define PI_F               (3.1415926f)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,14 +50,44 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
+SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart3;
 
 
 /* USER CODE BEGIN PV */
+volatile uint8_t gyro_data_ready = 0;
+volatile uint32_t packet_counter = 0;
 
+volatile uint8_t  bias_calibrating = 0;
+volatile uint8_t  bias_done        = 0;
+volatile uint32_t tim3_ticks       = 0;
+
+int32_t bias_sum_x = 0;
+int32_t bias_sum_y = 0;
+int32_t bias_sum_z = 0;
+uint32_t bias_sample_count = 0;
+
+float bias_x = 0.0f;
+float bias_y = 0.0f;
+float bias_z = 0.0f;
+
+float filt_x = 0.0f;
+float filt_y = 0.0f;
+float filt_z = 0.0f;
+uint8_t filter_initialized = 0;
+
+float filter_alpha = 0.0f;
+
+int16_t raw[3];      // raw X, Y, Z
+char tx_buf[128];    // JSON line
+
+uint8_t bias_applied = 0;//
 
 /*static const char http_hello[] =
 "HTTP/1.1 200 OK\r\n"
@@ -100,14 +136,18 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM3_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
-
+uint8_t spi1_beriRegister(uint8_t);
+void spi1_beriRegistre(uint8_t, uint8_t*, uint8_t);
+void spi1_pisiRegister(uint8_t, uint8_t);
 
 //static bool ESP_SendHTTP(int conn_id, const char *page);
 
+void initL3GD20(void);
 
 void BlockPosting(uint32_t ms);
 uint8_t PostingAllowed(void);
@@ -117,6 +157,134 @@ void parse_query_kv(char *query);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+// Pavza, s katero omogocimo pravilno delovanje avtomatskega testa
+void start_bias_calibration(void)
+{
+  bias_calibrating   = 1;
+  bias_done          = 0;
+  tim3_ticks         = 0;
+  bias_sum_x         = 0;
+  bias_sum_y         = 0;
+  bias_sum_z         = 0;
+  bias_sample_count  = 0;
+
+  // Turn on LED PE8 (LD8) to show calibration in progress
+  HAL_GPIO_WritePin(GPIOE, LD8_Pin, GPIO_PIN_SET);
+
+  // Reset and start TIM3 with interrupt
+  __HAL_TIM_SET_COUNTER(&htim3, 0);
+  HAL_TIM_Base_Start_IT(&htim3);
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM3)
+  {
+    if (bias_calibrating)
+    {
+      tim3_ticks++;
+
+      if (tim3_ticks >= 2917)
+      {
+        bias_calibrating = 0;
+        bias_done        = 1;
+
+        // Stop timer
+        HAL_TIM_Base_Stop_IT(&htim3);
+
+        // Turn off LED PE8 (LD8) at end of calibration
+        HAL_GPIO_WritePin(GPIOE, LD8_Pin, GPIO_PIN_RESET);
+      }
+    }
+  }
+  else if (htim->Instance == TIM2)
+  {
+      if (++ms_cnt >= 100)
+      {
+    	  send_tick_50ms = 1;
+          ms_cnt = 0;
+      }
+  }
+}
+
+void pavza(){
+  uint32_t counter = 0;
+  for(counter=0; counter<600; counter++){
+    asm("nop");
+  }
+}
+
+uint8_t spi1_beriRegister(uint8_t reg)
+{
+  uint16_t buf_out, buf_in;
+  reg |= 0x80; // najpomembnejsi bit na 1
+  buf_out = reg; // little endian, se postavi na pravo mesto ....
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
+  pavza();
+  //HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)&buf_out, (uint8_t*)&buf_in, 2, 2); // blocking posiljanje ....
+  HAL_SPI_TransmitReceive(&hspi1, &((uint8_t*)&buf_out)[0], &((uint8_t*)&buf_in)[0], 1, 2); // razbito na dva dela, da se podaljsa cas in omogoci pravilno delovanje testa
+  pavza();
+  HAL_SPI_TransmitReceive(&hspi1, &((uint8_t*)&buf_out)[1], &((uint8_t*)&buf_in)[1], 1, 2); // razbito na dva dela, da se podaljsa cas in omogoci pravilno delovanje testa
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+  pavza();
+  return buf_in >> 8; // little endian...
+}
+
+void spi1_pisiRegister(uint8_t reg, uint8_t vrednost)
+{
+  uint16_t buf_out;
+  buf_out = reg | (vrednost<<8); // little endian, se postavi na pravo mesto ....
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
+  pavza();
+  //HAL_SPI_Transmit(&hspi1, (uint8_t*)&buf_out, 2, 2); // blocking posiljanje ....
+  HAL_SPI_Transmit(&hspi1, &((uint8_t*)&buf_out)[0], 1, 2); // razbito na dva dela, da se podaljsa cas in omogoci pravilno delovanje testa
+  pavza();
+  HAL_SPI_Transmit(&hspi1, &((uint8_t*)&buf_out)[1], 1, 2); // razbito na dva dela, da se podaljsa cas in omogoci pravilno delovanje testa
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+  pavza();
+}
+
+void spi1_beriRegistre(uint8_t reg, uint8_t* buffer, uint8_t velikost)
+{
+  reg |= 0xC0; // najpomembnejsa bita na 1
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
+  pavza();
+  HAL_SPI_Transmit(&hspi1, &reg, 1, 10); // blocking posiljanje....
+  pavza();
+  HAL_SPI_Receive(&hspi1,  buffer, velikost, velikost); // blocking posiljanje....
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+  pavza();
+}
+
+void initL3GD20(void)
+{
+  // WHO_AM_I = 0x0F
+  uint8_t cip = spi1_beriRegister(0x0F);
+
+  // L3GD20: 0xD4, I3G4250D: 0xD3
+  if (cip != 0xD4 && cip != 0xD3)
+    for (;;) ; // wrong chip → stop here
+
+  // CTRL_REG1 (0x20):
+  // DR=01 (190/200 Hz), BW=00, PD=1, X/Y/Z enable
+  spi1_pisiRegister(0x20, 0x4F);
+
+  // CTRL_REG3 (0x22):
+  // I2_DRDY = 1 → data ready on INT2/DRDY pin
+  spi1_pisiRegister(0x22, 0x08);
+
+  // CTRL_REG4 (0x23):
+  // FS[1:0] = 01 → 500 dps
+  spi1_pisiRegister(0x23, 0x10);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == MEMS_INT2_Pin)  // PE1, INT2 from gyro
+  {
+	gyro_data_ready = 1;
+  }
+}
 
 //------------------------------------------------------------
 
@@ -660,6 +828,73 @@ static bool ESP_HTTP_POST_KeepAlive(uint8_t link_id,
     return true;
 }
 
+void prepareData(){
+	  gyro_data_ready = 0;
+
+
+	  // Read raw data
+	  spi1_beriRegistre(0x28, (uint8_t*)raw, 6);
+
+	  if (bias_calibrating)
+	  {
+		// During calibration: accumulate sums
+		bias_sum_x += raw[0];
+		bias_sum_y += raw[1];
+		bias_sum_z += raw[2];
+		bias_sample_count++;
+	  }
+	  else
+	  {
+		// If calibration time is over and we haven't computed bias yet
+		if (bias_done && !bias_applied && bias_sample_count > 0)
+		{
+		  bias_x = (float)bias_sum_x / (float)bias_sample_count;
+		  bias_y = (float)bias_sum_y / (float)bias_sample_count;
+		  bias_z = (float)bias_sum_z / (float)bias_sample_count;
+
+		  bias_applied = 1;
+		}
+
+		// Only send meaningful data once bias is known
+		if (bias_applied)
+		{
+			// 1) raw -> dps (brez filtra)
+			float x_dps = (raw[0] - bias_x) * GYRO_SENS_500DPS;
+			float y_dps = (raw[1] - bias_y) * GYRO_SENS_500DPS;
+			float z_dps = (raw[2] - bias_z) * GYRO_SENS_500DPS;
+
+			// 2) inicializacija filtra pri prvem vzorcu
+			if (!filter_initialized)
+			{
+				filt_x = x_dps;
+				filt_y = y_dps;
+				filt_z = z_dps;
+				filter_initialized = 1;
+			}
+			else
+			{
+				// 3) nizko-prepustni filter (za vsako os posebej)
+				filt_x = filt_x + filter_alpha * (x_dps - filt_x);
+				filt_y = filt_y + filter_alpha * (y_dps - filt_y);
+				filt_z = filt_z + filter_alpha * (z_dps - filt_z);
+			}
+
+			// 4) pošiljamo že FILTRIRANE vrednosti
+			int len = snprintf(
+			    tx_buf,
+			    sizeof(tx_buf),
+			    "{\"deviceId\":\"esp32-01\", \"GYR\":%lu, \"X\":%.3f, \"Y\":%.3f, \"Z\":%.3f}\r\n",
+			    (unsigned long)packet_counter++,
+			    filt_x, filt_y, filt_z
+			);
+
+
+			//CDC_Print(tx_buf);
+			HAL_GPIO_TogglePin(GPIOE, LD3_Pin);
+		}
+	  }
+}
+
 void BlockPosting(uint32_t ms)
 {
     post_blocked = 1;
@@ -708,12 +943,27 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
+  MX_TIM3_Init();
   MX_TIM2_Init();
   MX_USART3_UART_Init();
   ESP_RxStart(); // start the reading from uart
   /* USER CODE BEGIN 2 */
 
-   
+    __HAL_SPI_ENABLE(&hspi1);
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET); // CS postavimo na 1
+
+    initL3GD20();   // <<< IMPORTANT: init gyro with new settings
+
+    // Start bias calibration immediately at startup
+
+
+    float dt = 1.0f / GYRO_FS_HZ;
+    float RC = 1.0f / (2.0f * PI_F * FILTER_FC_HZ);
+    filter_alpha = dt / (RC + dt);
+
+    //int16_t meritev[4];
+    //meritev[0] = 0xaaab;// glava za zaznamek zacetek paketa
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -723,10 +973,20 @@ int main(void)
     uint8_t timer2 = 1;
     //uint8_t test = 1;
     uint8_t test2 = 1;
+    uint8_t calibrate = 1;
 
       /* USER CODE BEGIN WHILE */
       while (1)
       {
+    	  if (gyro_data_ready && auth)
+		  {
+    		  if(calibrate){
+    			 start_bias_calibration();
+    			 calibrate = 0;
+    		  }
+    		  prepareData();
+		  }
+
     	  if(test2){
     	  if(auth && !done && !wifi_reconfig){
     		  CDC_Print("\r\n=== ESP INIT START ===\r\n");
@@ -831,7 +1091,7 @@ int main(void)
     		      }
 
     		      bool ok = ESP_HTTP_POST_KeepAlive(4, "manda-untrailed-debbra.ngrok-free.dev", 443,
-    		                                        "/gyro/latest", "X: 0.001, Y: 0.002, Z: 0.003");
+    		                                        "/gyro/latest", tx_buf);
 
     		      if (!ok) {
     		    	  CDC_Print("sending");
