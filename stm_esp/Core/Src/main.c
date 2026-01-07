@@ -45,9 +45,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
-
-SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
@@ -56,7 +53,6 @@ UART_HandleTypeDef huart3;
 
 
 /* USER CODE BEGIN PV */
-
 
 /*static const char http_hello[] =
 "HTTP/1.1 200 OK\r\n"
@@ -93,6 +89,10 @@ volatile uint8_t esp_busy = 0;
 volatile uint8_t link_ok = 0;
 
 
+volatile uint8_t  post_blocked = 0;
+volatile uint32_t post_block_until_ms = 0;
+
+#define POST_BLOCK_MS 800
 
 /* USER CODE END PV */
 
@@ -106,17 +106,25 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 
-
-//static bool ESP_SendHTTP(int conn_id, const char *page);
-
-
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-// Pavza, s katero omogocimo pravilno delovanje avtomatskega testa
+
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM2)
+  {
+      if (++ms_cnt >= 50)
+      {
+    	  send_tick_50ms = 1;
+          ms_cnt = 0;
+      }
+  }
+}
+
 
 
 //------------------------------------------------------------
@@ -284,8 +292,6 @@ typedef enum {
 	    return false;
 	}
 
-
-
 //test OK response AT
 bool ESP_SendAT_OK(UART_HandleTypeDef *huart, uint32_t timeout_ms)
 {
@@ -330,7 +336,140 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
+static bool ESP_WaitFor(const char *needle, uint32_t timeout_ms)
+{
+    uint32_t t0 = HAL_GetTick();
+    while ((HAL_GetTick() - t0) < timeout_ms)
+    {
+        if (strstr((char*)esp_rx, needle)) return true;
+        HAL_Delay(1);
+    }
+    return false;
+}
 
+static bool ESP_SendData(uint8_t cid, const char *data)
+{
+
+	if (strstr((char*)esp_rx, "+IPD,")) {
+	    // let ESP_Pump() consume it first
+	    return false;
+	}
+
+    char cmd[64];
+    int len = (int)strlen(data);
+
+    // IMPORTANT: clear before command so '>'/'SEND OK' are fresh
+    ESP_ClearRx();
+    snprintf(cmd, sizeof(cmd), "AT+CIPSEND=%u,%d", (unsigned)cid, len);
+
+    // send AT+CIPSEND...
+    {
+        char line[96];
+        snprintf(line, sizeof(line), "%s\r\n", cmd);
+        HAL_UART_Transmit(&huart3, (uint8_t*)line, strlen(line), 1000);
+    }
+
+    // wait for prompt
+    if (!ESP_WaitFor(">", 2000))
+    {
+        CDC_Print("NO >, RX was:\r\n");
+        CDC_Print((char*)esp_rx);
+        CDC_Print("\r\n");
+        return false;
+    }
+
+    // now send the raw HTTP bytes
+    ESP_ClearRx();
+    HAL_UART_Transmit(&huart3, (uint8_t*)data, len, 2000);
+
+    // wait for SEND OK
+    if (!ESP_WaitFor("SEND OK", 3000))
+        return false;
+
+    return true;
+}
+
+
+
+static int ESP_WaitConnectResult(uint32_t timeout_ms)
+{
+    uint32_t t0 = HAL_GetTick();
+
+    while ((HAL_GetTick() - t0) < timeout_ms)
+    {
+        // ----- FAILURES -----
+        if (strstr((char*)esp_rx, "ERROR"))  return -1;
+        if (strstr((char*)esp_rx, "FAIL"))   return -1;
+        if (strstr((char*)esp_rx, "busy"))   return -1;
+        if (strstr((char*)esp_rx, "CLOSED")) return -1;
+
+        // ----- SUCCESSES -----
+        if (strstr((char*)esp_rx, "ALREADY CONNECTED")) return 1;
+        if (strstr((char*)esp_rx, "CONNECT"))           return 1;
+        if (strstr((char*)esp_rx, "OK"))                return 1;
+
+        HAL_Delay(1);
+    }
+
+    // timeout
+    return 0;
+}
+
+
+static bool ESP_SSL_Connect(uint8_t link_id, const char *host, uint16_t port)
+{
+    char cmd[128];
+
+    // If already connected, keep it
+    ESP_ClearRx();
+    snprintf(cmd, sizeof(cmd), "AT+CIPSTATUS\r\n");
+    HAL_UART_Transmit(&huart3, (uint8_t*)cmd, strlen(cmd), 1000);
+    HAL_Delay(50);
+    if (strstr((char*)esp_rx, "STATUS:3") || strstr((char*)esp_rx, "STATUS:4"))
+        return true;
+
+    // Start SSL
+    ESP_ClearRx();
+    snprintf(cmd, sizeof(cmd), "AT+CIPSTART=%u,\"SSL\",\"%s\",%u\r\n",
+             (unsigned)link_id, host, (unsigned)port);
+    HAL_UART_Transmit(&huart3, (uint8_t*)cmd, strlen(cmd), 3000);
+
+    // Wait connect result
+    int r = ESP_WaitConnectResult(8000);
+    return (r > 0);
+}
+
+static bool ESP_HTTP_POST_KeepAlive(uint8_t link_id,
+                                   const char *host, uint16_t port,
+                                   const char *path,
+                                   const char *json_body)
+{
+    char req[768];
+    int body_len = (int)strlen(json_body);
+
+    int req_len = snprintf(req, sizeof(req),
+        "POST %s HTTP/1.1\r\n"
+        "Host: %s\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: %d\r\n"
+        "Connection: keep-alive\r\n"
+        "\r\n"
+        "%s",
+        path, host, body_len, json_body);
+
+    if (req_len <= 0 || req_len >= (int)sizeof(req))
+        return false;
+
+    // send it over the existing connection
+    if (!ESP_SendData(link_id, req))
+        return false;
+
+    // optional: read response quickly (so buffers don’t fill)
+    // (just wait for "HTTP/1.1" or "+IPD" briefly)
+    ESP_WaitFor("HTTP/1.1", 500);
+
+    return true;
+}
 
 
 
@@ -368,18 +507,17 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
-  //MX_TIM3_Init();
   MX_TIM2_Init();
   MX_USART3_UART_Init();
   ESP_RxStart(); // start the reading from uart
   /* USER CODE BEGIN 2 */
-
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+      //auth = 1; // nima veze na avtentikacijo
     uint8_t timer2 = 1;
     //uint8_t test = 1;
     uint8_t test2 = 1;
@@ -446,30 +584,35 @@ int main(void)
     	        HAL_Delay(1);   // or 5ms
     	  }
 
-    	
-
     	  //static uint32_t t_check = 0;
     	  if(test2){
-    		  /*if(HAL_GetTick() - t_check > 3000){
-
-    			  t_check = HAL_GetTick();
-    			      uint8_t resp[512]; uint32_t rlen;
-
-    			      ESP_SendCmd_Wait(&huart3, "AT+CIPSTATUS", "OK", "ERROR", 1000, resp, sizeof(resp), &rlen);
-    			      CDC_Print("CIPSTATUS:\r\n");
-    			      CDC_Print((char*)resp);
-    			      CDC_Print("\r\n");
-    		  }*/
-
+    		  
+    		  if(timer2){
+    			  HAL_TIM_Base_Start_IT(&htim2);
+    			  CDC_Print("Timer2 start...\r\n");
+    			  timer2 = 0;
+    		  }
     		  if (send_tick_50ms)
     		  {
-            bool r = ESP_SendAT_OK(&huart3,500);
+    		      send_tick_50ms = 0;
 
-    		    if(r){
-              CDC_Print("OK");
-            }else{
-              CDC_Print("ERROR");
-            }
+    		      if (!link_ok) {
+    		    	  CDC_Print("connecting");
+    		          link_ok = ESP_SSL_Connect(4, "manda-untrailed-debbra.ngrok-free.dev", 443);
+    		          if (!link_ok) { esp_busy = 0; continue; }
+    		      }
+
+    		      bool ok = ESP_HTTP_POST_KeepAlive(4, "manda-untrailed-debbra.ngrok-free.dev", 443,
+    		                                        "/gyro/latest", "X: 0.001, Y: 0.002, Z: 0.003");
+
+    		      if (!ok) {
+    		    	  CDC_Print("sending");
+    		          link_ok = 0;
+    		          ESP_ClearRx();
+    		          HAL_UART_Transmit(&huart3, (uint8_t*)"AT+CIPCLOSE=4\r\n", 14, 1000);
+    		      }
+
+    		      
     		  }
     	  }
     	  HAL_Delay(1);
